@@ -8,6 +8,8 @@ import grp
 import socket
 import time
 import sys
+import json
+import requests
 
 # ==== Configuration ====
 CRIBL_USER = "cribl"
@@ -20,6 +22,7 @@ CRIBL_VERSION = "4.5.2"
 CRIBL_TARBALL = f"cribl-edge-{CRIBL_VERSION}-linux-x64.tgz"
 CRIBL_DIR = "/opt/cribl"
 TOKEN = "your-token-from-stream-ui"  # Replace with actual token
+FLEET_NAME = "my-fleet"  # Replace with your desired Fleet name
 
 def check_connectivity(host, port):
     print("[+] Checking connectivity to Cribl Stream Leader...")
@@ -99,6 +102,34 @@ def start_cribl():
     time.sleep(3)
     subprocess.run(["systemctl", "status", "cribl", "--no-pager"])
 
+def create_fleet():
+    print("[+] Creating Fleet...")
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {TOKEN}"
+    }
+    data = {
+        "name": FLEET_NAME,
+        "description": "Fleet created via script"
+    }
+    response = requests.post(f"{LEADER_URL}/api/v1/fleets", headers=headers, data=json.dumps(data))
+    if response.status_code == 201:
+        print(f"Fleet '{FLEET_NAME}' created successfully.")
+    elif response.status_code == 409:
+        print(f"Fleet '{FLEET_NAME}' already exists.")
+    else:
+        print(f"Failed to create Fleet: {response.text}")
+
+def join_fleet():
+    print("[+] Joining Fleet...")
+    os.chdir(f"{CRIBL_DIR}/cribl-edge")
+    run_as_cribl([
+        "./bin/cribl", "edge:join-fleet",
+        "--fleet", FLEET_NAME,
+        "--controller", LEADER_URL,
+        "--token", TOKEN
+    ])
+
 def main():
     if not check_connectivity(LEADER_IP, LEADER_PORT):
         sys.exit(1)
@@ -106,12 +137,13 @@ def main():
     create_user(CRIBL_USER, CRIBL_GROUP)
     download_and_extract_tarball()
     set_permissions(CRIBL_DIR, CRIBL_USER, CRIBL_GROUP)
+    create_fleet()
     bootstrap_edge()
+    join_fleet()
     enable_systemd()
     start_cribl()
 
-    print(f"\n Cribl Edge installed and connected to Leader at {LEADER_URL}")
+    print(f"\n Cribl Edge installed, connected to Leader at {LEADER_URL}, and joined Fleet '{FLEET_NAME}'")
 
 if __name__ == "__main__":
     main()
-

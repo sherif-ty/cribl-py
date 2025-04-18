@@ -2,7 +2,6 @@
 
 This script automates the full setup of Cribl Edge on a Linux server and registers it with a Cribl Stream Leader.
 
-
 ## What It Does
 
 - Checks connectivity to Cribl Stream Leader (IP + Port)
@@ -12,14 +11,14 @@ This script automates the full setup of Cribl Edge on a Linux server and registe
 - Bootstraps Edge to the leader using a secure token
 - Configures systemd service for auto-start
 - Starts and enables Cribl Edge
-
+- **Creates and joins a Fleet** (new functionality)
 
 ## Folder Structure
 
 cribl_edge_installer/
 ├── install_cribl_edge.py     # Main installer script
 ├── README.md                 # You're reading it
-├── requirements.txt          # Python dependencies (currently empty)
+├── requirements.txt          # Python dependencies
 └── run.sh                    # Optional shell wrapper
 
 ## Requirements
@@ -29,16 +28,19 @@ cribl_edge_installer/
 - Internet access (for downloading Cribl Edge)
 - port 4200 open in the Edge machine
 
-
 ## Python Dependencies
 
 Install them via:
 
-pip install -r requirements.txt
+```sh
+1- pip install -r requirements.txt
 
-## Running the Script
-option1: run the python file
-sudo python3 install_cribl_edge.py
-option2: run the shell file
+Option 1: Run the Python file
+  -pip install -r requirements.txt
+  - sudo python3 install_cribl_edge.py
+
+Option 2: Run the shell file
 chmod +x run.sh
 ./run.sh
+
+``` 
