@@ -33,7 +33,7 @@ cribl_edge_installer/
 Install them via:
 
 ```sh
-1- pip install -r requirements.txt
+
 
 Option 1: Run the Python file
   -pip install -r requirements.txt
