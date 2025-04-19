@@ -10,6 +10,7 @@ import time
 import sys
 import json
 import requests
+import platform
 
 # ==== Read Configuration from File ====
 def read_config(file_path):
@@ -22,6 +23,7 @@ def read_config(file_path):
 
 config = read_config('config.txt')
 
+# Read configuration from config.txt
 CRIBL_USER = config['CRIBL_USER']
 CRIBL_GROUP = config['CRIBL_GROUP']
 EDGE_NAME = config['EDGE_NAME']
@@ -29,11 +31,47 @@ LEADER_IP = config['LEADER_IP']
 LEADER_PORT = int(config['LEADER_PORT'])
 LEADER_URL = f"https://{LEADER_IP}:{LEADER_PORT}"
 CRIBL_VERSION = config['CRIBL_VERSION']
-CRIBL_TARBALL = f"cribl-edge-{CRIBL_VERSION}-linux-x64.tgz"
+CRIBL_TARBALL_NAME = config['CRIBL_TARBALL_NAME']
 CRIBL_DIR = config['CRIBL_DIR']
 TOKEN = config['TOKEN']
 FLEET_NAME = config['FLEET_NAME']
 
+# ==== System Architecture Detection ====
+def detect_architecture():
+    arch = platform.machine().lower()
+    if "x86_64" in arch:
+        return "x64"
+    elif "aarch64" in arch:
+        return "arm64"
+    else:
+        raise Exception("Unsupported architecture: " + arch)
+
+# ==== Handle Cribl Download and Installation ====
+def download_and_extract_tarball():
+    os.makedirs(CRIBL_DIR, exist_ok=True)
+    os.chdir("/opt")
+    
+    # Detect system architecture and choose the appropriate URL
+    architecture = detect_architecture()
+    if architecture == "x64":
+        tarball_url = "https://cdn.cribl.io/dl/latest-x64"
+    elif architecture == "arm64":
+        tarball_url = "https://cdn.cribl.io/dl/latest-arm64"
+    
+    print(f"[+] Downloading Cribl Edge for {architecture} architecture from {tarball_url}")
+    
+    try:
+        # Download and extract the tarball
+        download_url = subprocess.getoutput(f"curl -s {tarball_url}")
+        subprocess.run(f"curl -Lso - {download_url} | tar zxv", shell=True, check=True)
+
+        # Clean up after extraction
+        os.rename(f"cribl-edge-{CRIBL_VERSION}", "cribl-edge")
+        shutil.move("cribl-edge", CRIBL_DIR)
+    except subprocess.CalledProcessError as e:
+        print(f"[!] Failed to download or extract Cribl Edge: {e}")
+
+# ==== System Setup and Cribl Installation ====
 def check_connectivity(host, port):
     print("[+] Checking connectivity to Cribl Stream Leader...")
     try:
@@ -56,34 +94,6 @@ def create_user(username, groupname):
         grp.getgrnam(groupname)
     except KeyError:
         subprocess.run(["groupadd", groupname], check=True)
-
-# Fetch latest version dynamically
-def get_latest_version_url():
-    print("[+] Fetching the latest version URL from Cribl CDN...")
-    latest_version_url = "https://cdn.cribl.io/dl/latest-x64"
-    with urllib.request.urlopen(latest_version_url) as response:
-        return response.read().decode('utf-8').strip()
-
-def download_and_extract_tarball():
-    os.makedirs(CRIBL_DIR, exist_ok=True)
-    os.chdir("/opt")
-    
-    # Fetch the dynamic latest URL for the tarball
-    url = get_latest_version_url()
-    CRIBL_TARBALL = url.split("/")[-1]  # Extract the tarball filename from the URL
-
-    print(f"[+] Downloading Cribl Edge from: {url}")
-    urllib.request.urlretrieve(url, CRIBL_TARBALL)
-
-    print(f"[+] Extracting {repr(CRIBL_TARBALL)}")
-    with tarfile.open(CRIBL_TARBALL, "r:gz") as tar:
-        tar.extractall()
-    os.remove(CRIBL_TARBALL)
-    
-    # Rename and move the extracted folder
-    extracted_folder = f"cribl-edge-{CRIBL_VERSION}"  # Ensure version matches extraction name
-    os.rename(extracted_folder, "cribl-edge")
-    shutil.move("cribl-edge", CRIBL_DIR)
 
 def set_permissions(path, user, group):
     uid = pwd.getpwnam(user).pw_uid
