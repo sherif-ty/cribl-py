@@ -59,3 +59,20 @@ chmod +x run.sh
 ./run.sh
 ```
 
+### NOTE ###
+If you don't want to create a fleet, you can simply remove or comment out the create_fleet() and join_fleet() function calls in the main() function. Here's the modified main() function
+```sh
+def main():
+    if not check_connectivity(LEADER_IP, LEADER_PORT):
+        sys.exit(1)
+    
+    create_user(CRIBL_USER, CRIBL_GROUP)
+    download_and_extract_tarball()
+    set_permissions(CRIBL_DIR, CRIBL_USER, CRIBL_GROUP)
+    # create_fleet()  # Commented out
+    bootstrap_edge()
+    # join_fleet()  # Commented out
+    enable_systemd()
+    start_cribl()
+    print(f"\n Cribl Edge installed and connected to Leader at {LEADER_URL}")
+```
