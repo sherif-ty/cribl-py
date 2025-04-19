@@ -1,0 +1,9 @@
+CRIBL_USER=cribl
+CRIBL_GROUP=cribl
+EDGE_NAME=edge-server2
+LEADER_IP=10.0.0.1
+LEADER_PORT=4200
+CRIBL_VERSION=4.5.2
+CRIBL_DIR=/opt/cribl
+TOKEN=your-token-from-stream-ui
+FLEET_NAME=my-fleet

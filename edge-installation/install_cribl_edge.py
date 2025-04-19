@@ -11,18 +11,28 @@ import sys
 import json
 import requests
 
-# ==== Configuration ====
-CRIBL_USER = "cribl"
-CRIBL_GROUP = "cribl"
-EDGE_NAME = "edge-server2"
-LEADER_IP = "10.0.0.1"  # Replace with Cribl Stream IP
-LEADER_PORT = 4200
+# ==== Read Configuration from File ====
+def read_config(file_path):
+    config = {}
+    with open(file_path, 'r') as file:
+        for line in file:
+            name, value = line.strip().split('=')
+            config[name] = value
+    return config
+
+config = read_config('config.txt')
+
+CRIBL_USER = config['CRIBL_USER']
+CRIBL_GROUP = config['CRIBL_GROUP']
+EDGE_NAME = config['EDGE_NAME']
+LEADER_IP = config['LEADER_IP']
+LEADER_PORT = int(config['LEADER_PORT'])
 LEADER_URL = f"https://{LEADER_IP}:{LEADER_PORT}"
-CRIBL_VERSION = "4.5.2"
+CRIBL_VERSION = config['CRIBL_VERSION']
 CRIBL_TARBALL = f"cribl-edge-{CRIBL_VERSION}-linux-x64.tgz"
-CRIBL_DIR = "/opt/cribl"
-TOKEN = "your-token-from-stream-ui"  # Replace with actual token
-FLEET_NAME = "my-fleet"  # Replace with your desired Fleet name
+CRIBL_DIR = config['CRIBL_DIR']
+TOKEN = config['TOKEN']
+FLEET_NAME = config['FLEET_NAME']
 
 def check_connectivity(host, port):
     print("[+] Checking connectivity to Cribl Stream Leader...")
@@ -33,13 +43,12 @@ def check_connectivity(host, port):
     except socket.error:
         print(f"Cannot reach Cribl Stream Leader at {host}:{port}")
         return False
-
 def create_user(username, groupname):
     try:
         pwd.getpwnam(username)
-        print(f"[+] User {username} already exists")
+        print(f"[+] User {repr(username)} already exists")
     except KeyError:
-        print(f"[+] Creating user {username}")
+        print(f"[+] Creating user {repr(username)}")
         subprocess.run(["useradd", "-r", "-s", "/bin/false", username], check=True)
     
     try:
@@ -52,10 +61,10 @@ def download_and_extract_tarball():
     os.chdir("/opt")
     
     url = f"https://cdn.cribl.io/dl/{CRIBL_TARBALL}"
-    print(f"[+] Downloading {url}")
+    print(f"[+] Downloading {repr(url)}")
     urllib.request.urlretrieve(url, CRIBL_TARBALL)
 
-    print(f"[+] Extracting {CRIBL_TARBALL}")
+    print(f"[+] Extracting {repr(CRIBL_TARBALL)}")
     with tarfile.open(CRIBL_TARBALL, "r:gz") as tar:
         tar.extractall()
     os.remove(CRIBL_TARBALL)
@@ -114,11 +123,11 @@ def create_fleet():
     }
     response = requests.post(f"{LEADER_URL}/api/v1/fleets", headers=headers, data=json.dumps(data))
     if response.status_code == 201:
-        print(f"Fleet '{FLEET_NAME}' created successfully.")
+        print(f"Fleet '{repr(FLEET_NAME)}' created successfully.")
     elif response.status_code == 409:
-        print(f"Fleet '{FLEET_NAME}' already exists.")
+        print(f"Fleet '{repr(FLEET_NAME)}' already exists.")
     else:
-        print(f"Failed to create Fleet: {response.text}")
+        print(f"Failed to create Fleet: {repr(response.text)}")
 
 def join_fleet():
     print("[+] Joining Fleet...")
@@ -143,7 +152,7 @@ def main():
     enable_systemd()
     start_cribl()
 
-    print(f"\n Cribl Edge installed, connected to Leader at {LEADER_URL}, and joined Fleet '{FLEET_NAME}'")
+    print(f"\n Cribl Edge installed, connected to Leader at {LEADER_URL}, and joined Fleet '{repr(FLEET_NAME)}'")
 
 if __name__ == "__main__":
     main()
