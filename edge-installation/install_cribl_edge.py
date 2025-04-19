@@ -43,6 +43,7 @@ def check_connectivity(host, port):
     except socket.error:
         print(f"Cannot reach Cribl Stream Leader at {host}:{port}")
         return False
+
 def create_user(username, groupname):
     try:
         pwd.getpwnam(username)
@@ -56,19 +57,32 @@ def create_user(username, groupname):
     except KeyError:
         subprocess.run(["groupadd", groupname], check=True)
 
+# Fetch latest version dynamically
+def get_latest_version_url():
+    print("[+] Fetching the latest version URL from Cribl CDN...")
+    latest_version_url = "https://cdn.cribl.io/dl/latest-x64"
+    with urllib.request.urlopen(latest_version_url) as response:
+        return response.read().decode('utf-8').strip()
+
 def download_and_extract_tarball():
     os.makedirs(CRIBL_DIR, exist_ok=True)
     os.chdir("/opt")
     
-    url = f"https://cdn.cribl.io/dl/{CRIBL_TARBALL}"
-    print(f"[+] Downloading {repr(url)}")
+    # Fetch the dynamic latest URL for the tarball
+    url = get_latest_version_url()
+    CRIBL_TARBALL = url.split("/")[-1]  # Extract the tarball filename from the URL
+
+    print(f"[+] Downloading Cribl Edge from: {url}")
     urllib.request.urlretrieve(url, CRIBL_TARBALL)
 
     print(f"[+] Extracting {repr(CRIBL_TARBALL)}")
     with tarfile.open(CRIBL_TARBALL, "r:gz") as tar:
         tar.extractall()
     os.remove(CRIBL_TARBALL)
-    os.rename(f"cribl-edge-{CRIBL_VERSION}", "cribl-edge")
+    
+    # Rename and move the extracted folder
+    extracted_folder = f"cribl-edge-{CRIBL_VERSION}"  # Ensure version matches extraction name
+    os.rename(extracted_folder, "cribl-edge")
     shutil.move("cribl-edge", CRIBL_DIR)
 
 def set_permissions(path, user, group):
