@@ -18,7 +18,7 @@ This script automates the full setup of Cribl Edge on a Linux server and registe
 ```sh
 cribl_edge_installer/
 ├── install_cribl_edge.py     # Main installer script
-├── config.txt                # Configuration file
+├── config.txt                # Configuration file (these data will find it when adding edge/nodes)
 ├── README.md                 # You're reading it
 ├── requirements.txt          # Python dependencies
 └── run.sh                    # Optional shell wrapper
