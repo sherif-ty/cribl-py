@@ -17,9 +17,12 @@ def read_config(file_path):
     config = {}
     with open(file_path, 'r') as file:
         for line in file:
-            name, value = line.strip().split('=')
-            config[name] = value
+            line = line.strip()
+            if line and '=' in line:  # Ensure it's not empty and contains '='
+                name, value = line.split('=', 1)
+                config[name] = value
     return config
+
 
 # Load the configuration from 'config.txt'
 config = read_config('config.txt')
