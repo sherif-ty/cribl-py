@@ -68,12 +68,19 @@ def download_and_extract_tarball():
         # Download and extract the tarball
         download_url = subprocess.getoutput(f"curl -s {tarball_url}")
         subprocess.run(f"curl -Lso - {download_url} | tar zxv", shell=True, check=True)
-
+        
+        # Debugging: List the files in the current directory to check extraction
+        print("[+] Extracted files:")
+        subprocess.run("ls -l", shell=True)
+        
         # Clean up after extraction
         os.rename(f"cribl-edge-{CRIBL_VERSION}", "cribl-edge")
         shutil.move("cribl-edge", CRIBL_DIR)
     except subprocess.CalledProcessError as e:
         print(f"[!] Failed to download or extract Cribl Edge: {e}")
+    except FileNotFoundError as e:
+        print(f"[!] Directory 'cribl-edge-{CRIBL_VERSION}' not found: {e}")
+
 
 # ==== System Setup and Cribl Installation ====
 def check_connectivity(host, port):
