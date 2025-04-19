@@ -21,6 +21,7 @@ def read_config(file_path):
             config[name] = value
     return config
 
+# Load the configuration from 'config.txt'
 config = read_config('config.txt')
 
 # Read configuration from config.txt
