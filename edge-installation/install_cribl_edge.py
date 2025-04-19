@@ -12,6 +12,19 @@ import json
 import requests
 import platform
 
+# Add this helper function to detect HTTP or HTTPS
+def detect_leader_protocol(host, port):
+    for protocol in ["https", "http"]:
+        try:
+            url = f"{protocol}://{host}:{port}/api/v1/version"
+            response = requests.get(url, timeout=5, verify=False)
+            if response.status_code == 200:
+                print(f"[+] Detected working protocol: {protocol.upper()}")
+                return f"{protocol}://{host}:{port}"
+        except requests.exceptions.RequestException as e:
+            print(f"[!] {protocol.upper()} failed: {e}")
+    raise Exception("Could not connect to Cribl Leader using HTTP or HTTPS")
+
 # ==== Read Configuration from File ====
 def read_config(file_path):
     config = {}
