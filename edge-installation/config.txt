@@ -1,22 +1,11 @@
-# User and group configuration
 CRIBL_USER=cribl
 CRIBL_GROUP=cribl
-
-# Edge configuration
-EDGE_NAME=cribl-edge
-
-# Leader connection configuration
+EDGE_NAME=my-edge-node
 LEADER_IP=3.123.253.64
 LEADER_PORT=9000
-LEADER_URL=https://$LEADER_IP:$LEADER_PORT
-
-# Version configuration
 CRIBL_VERSION=4.11.0
-CRIBL_TARBALL_NAME=cribl-edge-$CRIBL_VERSION-linux-x64.tgz
-
-# File paths and directories
+CRIBL_TARBALL_NAME=cribl-edge-4.11.0-linux-x64.tgz
 CRIBL_DIR=/opt/cribl
+TOKEN=your_actual_token_here
+FLEET_NAME=my-fleet
 
-# Authentication Token and Fleet
-TOKEN=your_token_here
-FLEET_NAME=your_fleet_name_here
