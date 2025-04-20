@@ -116,7 +116,7 @@ def bootstrap_edge():
 def enable_systemd():
     print("Step 7: Enabling systemd service for Cribl Edge")
     try:
-        run(f"sudo {INSTALL_DIR}/bin/cribl boot-start enable -m systemd -u {CRIBL_USER}", check=False)
+        run(f"echo y | sudo {INSTALL_DIR}/bin/cribl boot-start enable -m systemd -u {CRIBL_USER}", check=False)
         print("Systemd service enabled.")
     except Exception as e:
         raise RuntimeError(f"Failed to enable Cribl Edge systemd service: {e}")
