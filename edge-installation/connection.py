@@ -1,5 +1,4 @@
 import requests
-import ssl
 
 # Disable insecure request warnings
 requests.packages.urllib3.disable_warnings()
@@ -13,6 +12,8 @@ def connect_to_leader(protocol, host, port, token):
         "Authorization": f"Bearer {token}"
     }
     
+    print(f"[DEBUG] Connecting to {url} with token {token}")
+    
     try:
         print(f"[+] Trying {protocol.upper()} connection to {url}...")
         response = requests.get(url, headers=headers, timeout=5, verify=False)  # Disable SSL verification
@@ -20,6 +21,7 @@ def connect_to_leader(protocol, host, port, token):
             print(f"[+] Successfully connected to Cribl Leader at {url}")
         else:
             print(f"[!] Failed to connect, status code: {response.status_code}")
+            print(f"[!] Response: {response.text}")
     except requests.exceptions.RequestException as e:
         print(f"[!] Connection failed: {e}")
 
