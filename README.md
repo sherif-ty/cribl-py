@@ -8,7 +8,7 @@ This repository is modular, starting with an **Edge installer**, and will contin
 
 ## 1. Cribl Edge Installer
 
-This module provides a simple and automated way to install **Cribl Edge** across different environments including **Linux**, **Windows**, **Docker**, and **Kubernetes**.
+This module provides a simple and automated way to install **Cribl Edge** across different environments including **Linux**, **Windows**, **Docker**, and **Kubernetes**. **with python**
 
 The installation logic is driven by a config file (`config.txt`) that defines how and where Cribl Edge will be installed.
 
