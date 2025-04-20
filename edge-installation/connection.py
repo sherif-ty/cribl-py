@@ -12,7 +12,7 @@ LEADER_IP = "3.123.253.64"
 LEADER_PORT = 4200
 CRIBL_VERSION = "latest"
 CRIBL_DIR = "/opt/cribl"
-TOKEN = "criblmaster"
+TOKEN = "eOHdmkvEJsN3QQvDz8T7tkQpV9SnYEqZ"
 FLEET_NAME = "python-fleet"
 LEADER_PROTOCOL = "http"
 
