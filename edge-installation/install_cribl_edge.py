@@ -16,21 +16,16 @@ import platform
 requests.packages.urllib3.disable_warnings()
 
 # ==== Helper: Detect HTTP or HTTPS Protocol ====
-def detect_leader_protocol(host, port):
-    for protocol in ["http", "https"]:
-        try:
-            url = f"{protocol}://{host}:{port}/api/v1/version"
-            response = requests.get(url, timeout=5, verify=False)
-            if response.status_code == 200:
-                print(f"[+] Detected working protocol: {protocol.upper()}")
-                return f"{protocol}://{host}:{port}"
-            elif response.status_code == 401:
-                # 401 Unauthorized is treated as a successful connection attempt (requires token)
-                print(f"[+] {protocol.upper()} returned 401 Unauthorized, which indicates the service is reachable.")
-                return f"{protocol}://{host}:{port}"
-        except requests.exceptions.RequestException as e:
-            print(f"[!] {protocol.upper()} failed: {e}")
-    raise Exception("Could not connect to Cribl Leader using HTTP or HTTPS")
+def detect_leader_protocol(protocol, host, port):
+    try:
+        url = f"{protocol}://{host}:{port}/api/v1/version"
+        response = requests.get(url, timeout=5, verify=False)
+        if response.status_code == 200:
+            print(f"[+] Detected working protocol: {protocol.upper()}")
+            return f"{protocol}://{host}:{port}"
+    except requests.exceptions.RequestException as e:
+        print(f"[!] {protocol.upper()} failed: {e}")
+    raise Exception(f"Could not connect to Cribl Leader using {protocol.upper()}")
 
 # ==== Read Configuration from File ====
 def read_config(file_path):
@@ -52,14 +47,15 @@ CRIBL_GROUP = config['CRIBL_GROUP']
 EDGE_NAME = config['EDGE_NAME']
 LEADER_IP = config['LEADER_IP']
 LEADER_PORT = int(config['LEADER_PORT'])
+LEADER_PROTOCOL = config['LEADER_PROTOCOL']
 CRIBL_VERSION = config['CRIBL_VERSION']
 CRIBL_TARBALL_NAME = config['CRIBL_TARBALL_NAME']
 CRIBL_DIR = config['CRIBL_DIR']
 TOKEN = config['TOKEN']
 FLEET_NAME = config['FLEET_NAME']
 
-# Auto-detect protocol + form leader URL
-LEADER_URL = detect_leader_protocol(LEADER_IP, LEADER_PORT)
+# Form leader URL using the protocol from the config
+LEADER_URL = detect_leader_protocol(LEADER_PROTOCOL, LEADER_IP, LEADER_PORT)
 
 # ==== Detect System Architecture ====
 def detect_architecture():
