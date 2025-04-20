@@ -55,13 +55,13 @@ def set_permissions(directory, user, group):
     os.system(f"sudo chown -R {user}:{group} {directory}")
 
 def bootstrap_edge():
-    os.system(f"sudo -u {CRIBL_USER} {CRIBL_DIR}/bin/cribl edge bootstrap --token {TOKEN} --leader {LEADER_URL}")
+    os.system(f"sudo -u {CRIBL_USER} {CRIBL_DIR}/bin/cribl mode-edge --token {TOKEN} --leader {LEADER_URL}")
 
 def enable_systemd():
-    os.system("sudo systemctl enable cribl")
+    os.system(f"sudo {CRIBL_DIR}/bin/cribl boot-start enable -m systemd -u {CRIBL_USER}")
 
 def start_cribl():
-    os.system("sudo systemctl start cribl")
+    os.system("sudo systemctl start cribl-edge")
 
 def main():
     global LEADER_URL
