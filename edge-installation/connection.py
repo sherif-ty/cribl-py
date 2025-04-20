@@ -10,15 +10,20 @@ CRIBL_GROUP = "cribl"
 EDGE_NAME = "python-edge"
 LEADER_IP = "3.123.253.64"
 LEADER_PORT = 4200
-CRIBL_VERSION = "latest"
 CRIBL_DIR = "/opt/cribl"
 TOKEN = "eOHdmkvEJsN3QQvDz8T7tkQpV9SnYEqZ"
 FLEET_NAME = "python-fleet"
 LEADER_PROTOCOL = "http"
 
-def run_command(command, check=True, shell=True):
+def run_command(command, check=True, shell=True, input_text=None):
     print(f"\n[Running] {command}")
-    result = subprocess.run(command, shell=shell, capture_output=True, text=True)
+    result = subprocess.run(
+        command,
+        shell=shell,
+        input=input_text,
+        capture_output=True,
+        text=True
+    )
     print(result.stdout)
     if result.stderr:
         print(f"[stderr] {result.stderr}")
@@ -62,7 +67,7 @@ def bootstrap_edge():
     run_command(f"sudo -u {CRIBL_USER} {CRIBL_DIR}/bin/cribl mode-edge -H {LEADER_IP} -p {LEADER_PORT}")
 
 def enable_systemd():
-    run_command(f"sudo {CRIBL_DIR}/bin/cribl boot-start enable -m systemd -u {CRIBL_USER}")
+    run_command(f"sudo {CRIBL_DIR}/bin/cribl boot-start enable -m systemd -u {CRIBL_USER}", input_text="y\n")
 
 def start_cribl():
     run_command("sudo systemctl start cribl")
@@ -85,7 +90,7 @@ def main():
     enable_systemd()
     start_cribl()
     verify_install()
-    
+
     print(f"\n Cribl Edge installed and connected to Leader at {LEADER_PROTOCOL}://{LEADER_IP}:{LEADER_PORT}")
 
 if __name__ == "__main__":
