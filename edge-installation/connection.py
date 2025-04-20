@@ -4,17 +4,35 @@ import os
 import platform
 import subprocess
 
-# === Configuration ===
+# ===========================
+# Cribl Edge Configuration
+# ===========================
+
+# Linux user and group to run Cribl Edge
 CRIBL_USER = "cribl"
 CRIBL_GROUP = "cribl"
+
+# Cribl Leader connection details
 LEADER_IP = "3.123.253.64"
 LEADER_PORT = 4200
-CRIBL_DIR = "/opt/cribl"
-TOKEN = "eOHdmkvEJsN3QQvDz8T7tkQpV9SnYEqZ"
 LEADER_PROTOCOL = "http"
 
-# 👇 Set this to "" if you want to use the default fleet
+# Installation directory for Cribl
+CRIBL_DIR = "/opt/cribl"
+
+# API token with permissions to check/create fleets
+TOKEN = "eOHdmkvEJsN3QQvDz8T7tkQpV9SnYEqZ"
+
+# Fleet or sub-fleet name. Examples:
+#   "myfleet"             => will join or create a top-level fleet
+#   "myfleet/region-1"    => will join or create a sub-fleet
+#   "" (empty string)     => will join the default fleet
+#    "if the sub fleet empty" => will not create 
 FLEET_NAME = "python-fleet"
+
+# ===========================
+# Internal Variables
+# ===========================
 
 LEADER_URL = f"{LEADER_PROTOCOL}://{LEADER_IP}:{LEADER_PORT}"
 HEADERS = {
@@ -22,6 +40,9 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
+# ===========================
+# Utility Functions
+# ===========================
 
 def run_command(command, check=True, shell=True, input_text=None):
     print(f"\n[Running] {command}")
@@ -40,26 +61,23 @@ def run_command(command, check=True, shell=True, input_text=None):
         sys.exit(result.returncode)
     return result
 
-
 def check_connectivity(ip, port):
     try:
         response = requests.get(f"http://{ip}:{port}", timeout=5)
         if response.status_code == 200:
-            print("[✓] Cribl Leader is reachable")
+            print("Connected to Cribl Leader successfully.")
             return True
         else:
-            print(f"[x] Cribl Leader responded with status code {response.status_code}")
+            print(f"Cribl Leader responded with status code {response.status_code}")
             return False
     except requests.ConnectionError:
-        print(f"[x] Could not connect to {ip}:{port}")
+        print(f"Could not connect to Cribl Leader at {ip}:{port}")
         return False
-
 
 def create_user_and_group(user, group):
     run_command(f"id -u {user} || sudo useradd -m -s /bin/bash {user}", check=False)
     run_command(f"getent group {group} || sudo groupadd {group}", check=False)
     run_command(f"sudo usermod -aG {group} {user}")
-
 
 def download_and_extract_tarball():
     arch = platform.machine()
@@ -68,19 +86,19 @@ def download_and_extract_tarball():
     elif arch == "aarch64":
         run_command("curl -Lso - $(curl https://cdn.cribl.io/dl/latest-arm64) | sudo tar zxv -C /opt")
     else:
-        print(f"[x] Unsupported architecture: {arch}")
+        print(f"Unsupported architecture: {arch}")
         sys.exit(1)
-
 
 def set_permissions():
     run_command(f"sudo chown -R {CRIBL_USER}:{CRIBL_GROUP} {CRIBL_DIR}")
 
-
-# === Fleet logic ===
+# ===========================
+# Fleet Management Functions
+# ===========================
 
 def fleet_exists(fleet_name):
     if not fleet_name:
-        return True  # No sub-fleet to check
+        return True  # No fleet to check, using default
     url = f"{LEADER_URL}/api/v1/fleets"
     try:
         response = requests.get(url, headers=HEADERS)
@@ -88,9 +106,8 @@ def fleet_exists(fleet_name):
         fleets = response.json().get("fleets", [])
         return any(fleet.get("name") == fleet_name for fleet in fleets)
     except Exception as e:
-        print(f"[ERROR] Could not check fleets: {e}")
+        print(f"Error checking for fleet: {e}")
         sys.exit(1)
-
 
 def create_fleet(fleet_name):
     url = f"{LEADER_URL}/api/v1/fleets"
@@ -98,23 +115,25 @@ def create_fleet(fleet_name):
     try:
         response = requests.post(url, json=payload, headers=HEADERS)
         response.raise_for_status()
-        print(f"[✓] Created fleet: {fleet_name}")
+        print(f"Created fleet: {fleet_name}")
     except Exception as e:
-        print(f"[ERROR] Failed to create fleet '{fleet_name}': {e}")
+        print(f"Failed to create fleet '{fleet_name}': {e}")
         sys.exit(1)
-
 
 def ensure_fleet(fleet_name):
     if not fleet_name:
-        print("[✓] No fleet name provided. Will join default fleet.")
+        print("No fleet name provided. Will use the default fleet.")
         return
-    print(f"[INFO] Checking fleet: {fleet_name}")
+    print(f"Checking if fleet '{fleet_name}' exists...")
     if fleet_exists(fleet_name):
-        print(f"[✓] Fleet exists: {fleet_name}")
+        print(f"Fleet '{fleet_name}' already exists.")
     else:
-        print(f"[+] Creating fleet: {fleet_name}")
+        print(f"Fleet '{fleet_name}' does not exist. Creating it...")
         create_fleet(fleet_name)
 
+# ===========================
+# Cribl Edge Setup Functions
+# ===========================
 
 def bootstrap_edge():
     if FLEET_NAME:
@@ -122,22 +141,21 @@ def bootstrap_edge():
     else:
         run_command(f"sudo -u {CRIBL_USER} {CRIBL_DIR}/bin/cribl mode-edge -H {LEADER_IP} -p {LEADER_PORT}")
 
-
 def enable_systemd():
     run_command(f"sudo {CRIBL_DIR}/bin/cribl boot-start enable -m systemd -u {CRIBL_USER}", input_text="y\n")
-
 
 def start_cribl():
     run_command("sudo systemctl start cribl")
     run_command("sudo systemctl status cribl", check=False)
 
-
 def verify_install():
-    print("\n[✓] Checking Cribl installation directory:")
+    print("\nVerifying Cribl installation...")
     run_command(f"ls -l {CRIBL_DIR}", check=False)
-    print("\n[✓] Tail of Cribl log:")
     run_command(f"sudo tail -n 20 {CRIBL_DIR}/log/cribl.log", check=False)
 
+# ===========================
+# Main Execution
+# ===========================
 
 def main():
     if not check_connectivity(LEADER_IP, LEADER_PORT):
@@ -153,11 +171,12 @@ def main():
     start_cribl()
     verify_install()
 
-    print(f"\n Cribl Edge installed and connected to Leader at {LEADER_URL}")
+    print("\nInstallation complete.")
+    print(f"Cribl Edge is connected to Leader at {LEADER_URL}")
     if FLEET_NAME:
-        print(f"➡ Joined Fleet: {FLEET_NAME}")
+        print(f"Joined Fleet: {FLEET_NAME}")
     else:
-        print("➡ Joined default fleet")
+        print("Joined default fleet.")
 
 if __name__ == "__main__":
     main()
