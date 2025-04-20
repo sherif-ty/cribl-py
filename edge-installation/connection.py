@@ -1,6 +1,7 @@
 import requests
 import sys
 import os
+import platform
 
 # Configuration variables
 CRIBL_USER = "cribl"
@@ -8,7 +9,7 @@ CRIBL_GROUP = "cribl"
 EDGE_NAME = "python-edge"
 LEADER_IP = "3.123.253.64"
 LEADER_PORT = 4200
-CRIBL_VERSION = "4.5.2"
+CRIBL_VERSION = "latest"
 CRIBL_DIR = "/opt/cribl"
 TOKEN = "criblmaster"
 FLEET_NAME = "python-fleet"
@@ -41,14 +42,13 @@ def create_user(user, group):
     os.system(f"sudo usermod -aG {group} {user}")
 
 def download_and_extract_tarball():
-    url = f"https://cdn.cribl.io/dl/cribl-{CRIBL_VERSION}-linux-x64.tgz"
-    response = requests.get(url)
-    if response.status_code == 200:
-        with open("/tmp/cribl.tgz", "wb") as f:
-            f.write(response.content)
-        os.system(f"sudo tar -xzf /tmp/cribl.tgz -C {CRIBL_DIR}")
+    arch = platform.machine()
+    if arch == "x86_64":
+        os.system("curl -Lso - $(curl https://cdn.cribl.io/dl/latest-x64) | sudo tar zxv -C /opt")
+    elif arch == "aarch64":
+        os.system("curl -Lso - $(curl https://cdn.cribl.io/dl/latest-arm64) | sudo tar zxv -C /opt")
     else:
-        print(f"Failed to download Cribl Edge: {response.status_code}")
+        print(f"Unsupported architecture: {arch}")
         sys.exit(1)
 
 def set_permissions(directory, user, group):
