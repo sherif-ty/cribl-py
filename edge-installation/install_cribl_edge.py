@@ -17,7 +17,7 @@ requests.packages.urllib3.disable_warnings()
 
 # ==== Helper: Detect HTTP or HTTPS Protocol ====
 def detect_leader_protocol(host, port):
-    for protocol in ["https", "http"]:
+    for protocol in ["http", "https"]:
         try:
             url = f"{protocol}://{host}:{port}/api/v1/version"
             response = requests.get(url, timeout=5, verify=False)
