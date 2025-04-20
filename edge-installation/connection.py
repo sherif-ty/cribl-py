@@ -5,13 +5,13 @@ import os
 # Configuration variables
 CRIBL_USER = "cribl"
 CRIBL_GROUP = "cribl"
-EDGE_NAME = "edge-server2"
-LEADER_IP = "10.0.0.1"
+EDGE_NAME = "python-edge"
+LEADER_IP = "3.123.253.64"
 LEADER_PORT = 4200
 CRIBL_VERSION = "4.5.2"
 CRIBL_DIR = "/opt/cribl"
 TOKEN = "criblmaster"
-FLEET_NAME = "my-fleet"
+FLEET_NAME = "python-fleet"
 LEADER_PROTOCOL = "http"
 
 def check_connectivity(ip, port):
