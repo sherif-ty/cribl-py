@@ -1,23 +1,72 @@
 import requests
+import sys
+import os
 
-LEADER_URL = "http://3.123.253.64:9000"
+# Configuration variables
+CRIBL_USER = "cribl"
+CRIBL_GROUP = "cribl"
+EDGE_NAME = "edge-server2"
+LEADER_IP = "10.0.0.1"
+LEADER_PORT = 4200
+CRIBL_VERSION = "4.5.2"
+CRIBL_DIR = "/opt/cribl"
 TOKEN = "criblmaster"
-INSTALL_SCRIPT = "/init/install-edge.sh"
-INSTALL_DIR = "/opt/cribl"
-FLEET_GROUP = "default_fleet"
-USER = "cribl"
-USER_GROUP = "cribl"
+FLEET_NAME = "my-fleet"
+LEADER_PROTOCOL = "http"
 
-# Construct URL for the installation script with query parameters
-url = f"{LEADER_URL}{INSTALL_SCRIPT}?group={FLEET_GROUP}&token={TOKEN}&user={USER}&user_group={USER_GROUP}&install_dir={INSTALL_DIR}"
+def check_connectivity(ip, port):
+    try:
+        response = requests.get(f"http://{ip}:{port}")
+        return response.status_code == 200
+    except requests.ConnectionError:
+        print(f"Could not connect to {ip}:{port}")
+        return False
 
-# Send GET request to fetch and execute the installation script
-response = requests.get(url)
-if response.status_code == 200:
-    print("[+] Installation script fetched successfully. Running it...")
-    # You can execute the script if needed, or just download it for manual use.
-    with open("/tmp/install-edge.sh", "wb") as f:
-        f.write(response.content)
-    print("[+] Script saved to /tmp/install-edge.sh")
-else:
-    print(f"[!] Failed to fetch installation script. Status code: {response.status_code}")
+def detect_leader_protocol(protocol, ip, port):
+    url = f"{protocol}://{ip}:{port}"
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            return url
+        else:
+            raise Exception(f"Could not connect to Cribl Leader using {protocol}")
+    except requests.ConnectionError:
+        raise Exception(f"Could not connect to Cribl Leader using {protocol}")
+
+def create_user(user, group):
+    os.system(f"sudo useradd -m -s /bin/bash {user}")
+    os.system(f"sudo groupadd {group}")
+    os.system(f"sudo usermod -aG {group} {user}")
+
+def download_and_extract_tarball():
+    url = f"https://cdn.cribl.io/dl/cribl-{CRIBL_VERSION}-linux-x64.tgz"
+    os.system(f"wget {url} -O /tmp/cribl.tgz")
+    os.system(f"sudo tar -xzf /tmp/cribl.tgz -C {CRIBL_DIR}")
+
+def set_permissions(directory, user, group):
+    os.system(f"sudo chown -R {user}:{group} {directory}")
+
+def bootstrap_edge():
+    os.system(f"sudo -u {CRIBL_USER} {CRIBL_DIR}/bin/cribl edge bootstrap --token {TOKEN} --leader {LEADER_URL}")
+
+def enable_systemd():
+    os.system("sudo systemctl enable cribl")
+
+def start_cribl():
+    os.system("sudo systemctl start cribl")
+
+def main():
+    if not check_connectivity(LEADER_IP, LEADER_PORT):
+        sys.exit(1)
+    
+    LEADER_URL = detect_leader_protocol(LEADER_PROTOCOL, LEADER_IP, LEADER_PORT)
+    create_user(CRIBL_USER, CRIBL_GROUP)
+    download_and_extract_tarball()
+    set_permissions(CRIBL_DIR, CRIBL_USER, CRIBL_GROUP)
+    bootstrap_edge()
+    enable_systemd()
+    start_cribl()
+    print(f"\n Cribl Edge installed and connected to Leader at {LEADER_URL}")
+
+if __name__ == "__main__":
+    main()
