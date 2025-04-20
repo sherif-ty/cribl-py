@@ -8,7 +8,9 @@ This repository is modular, starting with an **Edge installer**, and will contin
 
 ## 1. Cribl Edge Installer
 
-This module provides a simple and automated way to install **Cribl Edge** across different environments including **Linux**, **Windows**, **Docker**, and **Kubernetes**. **with python**
+This module provides a simple and automated way to install Cribl Edge across different environments including Linux, Windows, Docker, and Kubernetes with Python.
+
+It supports:
 
 The installation logic is driven by a config file (`config.txt`) that defines how and where Cribl Edge will be installed.
 
@@ -49,14 +51,14 @@ Edit `config.txt` to define your environment and target connection details:
 
 ```ini
 ENVIRONMENT = linux  # Options: linux, windows, docker, kubernetes
-CRIBL_USER = cribl
-CRIBL_GROUP = cribl
-INSTALL_DIR = /opt/cribl
-LEADER_IP = 3.123.253.64
-LEADER_PORT = 9000
-EDGE_TOKEN = eOHdmkvEJsN3QQvDz8T7tkQpV9SnYEqZ
-FLEET_NAME = default_fleet
-CRIBL_VERSION = 4.11.0
+CRIBL_USER = <your system username>
+CRIBL_GROUP = <your system group>
+INSTALL_DIR = <your desired install path>
+LEADER_IP = <your Cribl Leader IP>
+LEADER_PORT = <your Cribl Leader port>
+EDGE_TOKEN = <your Edge token>
+FLEET_NAME = <your fleet name>
+CRIBL_VERSION = <desired Cribl version>
 ```
 
 ---
@@ -99,8 +101,6 @@ This will:
 - Manage and assign Edge nodes (move, remove, label)
 - Upload and sync packs or pipelines
 - Secure API integration with login token management
-
-This is just the beginning — `cribl-py` aims to be your go-to Python toolkit for automating all things Cribl.
 
 ---
 
