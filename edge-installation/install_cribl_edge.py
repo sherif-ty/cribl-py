@@ -12,7 +12,10 @@ import json
 import requests
 import platform
 
-# Add this helper function to detect HTTP or HTTPS
+# Disable insecure request warnings
+requests.packages.urllib3.disable_warnings()
+
+# ==== Helper: Detect HTTP or HTTPS Protocol ====
 def detect_leader_protocol(host, port):
     for protocol in ["https", "http"]:
         try:
@@ -31,30 +34,30 @@ def read_config(file_path):
     with open(file_path, 'r') as file:
         for line in file:
             line = line.strip()
-            if line and '=' in line:  # Ensure it's not empty and contains '='
+            if line and '=' in line:
                 name, value = line.split('=', 1)
                 config[name] = value
     return config
 
-
 # Load the configuration from 'config.txt'
 config = read_config('config.txt')
 
-# Read configuration from config.txt
+# Read values
 CRIBL_USER = config['CRIBL_USER']
 CRIBL_GROUP = config['CRIBL_GROUP']
 EDGE_NAME = config['EDGE_NAME']
 LEADER_IP = config['LEADER_IP']
 LEADER_PORT = int(config['LEADER_PORT'])
-LEADER_PROTOCOL = config.get('LEADER_PROTOCOL', 'http')  # Default to http if not set
-LEADER_URL = f"{LEADER_PROTOCOL}://{LEADER_IP}:{LEADER_PORT}"
 CRIBL_VERSION = config['CRIBL_VERSION']
 CRIBL_TARBALL_NAME = config['CRIBL_TARBALL_NAME']
 CRIBL_DIR = config['CRIBL_DIR']
 TOKEN = config['TOKEN']
 FLEET_NAME = config['FLEET_NAME']
 
-# ==== System Architecture Detection ====
+# Auto-detect protocol + form leader URL
+LEADER_URL = detect_leader_protocol(LEADER_IP, LEADER_PORT)
+
+# ==== Detect System Architecture ====
 def detect_architecture():
     arch = platform.machine().lower()
     if "x86_64" in arch:
@@ -64,30 +67,20 @@ def detect_architecture():
     else:
         raise Exception("Unsupported architecture: " + arch)
 
-# ==== Handle Cribl Download and Installation ====
+# ==== Download and Extract Cribl ====
 def download_and_extract_tarball():
     os.makedirs(CRIBL_DIR, exist_ok=True)
     os.chdir("/opt")
-    
-    # Detect system architecture and choose the appropriate URL
+
     architecture = detect_architecture()
-    if architecture == "x64":
-        tarball_url = "https://cdn.cribl.io/dl/latest-x64"
-    elif architecture == "arm64":
-        tarball_url = "https://cdn.cribl.io/dl/latest-arm64"
-    
+    tarball_url = f"https://cdn.cribl.io/dl/latest-{architecture}"
     print(f"[+] Downloading Cribl Edge for {architecture} architecture from {tarball_url}")
     
     try:
-        # Download and extract the tarball
         download_url = subprocess.getoutput(f"curl -s {tarball_url}")
         subprocess.run(f"curl -Lso - {download_url} | tar zxv", shell=True, check=True)
-        
-        # Debugging: List the files in the current directory to check extraction
         print("[+] Extracted files:")
         subprocess.run("ls -l", shell=True)
-        
-        # Clean up after extraction
         os.rename(f"cribl-edge-{CRIBL_VERSION}", "cribl-edge")
         shutil.move("cribl-edge", CRIBL_DIR)
     except subprocess.CalledProcessError as e:
@@ -95,8 +88,7 @@ def download_and_extract_tarball():
     except FileNotFoundError as e:
         print(f"[!] Directory 'cribl-edge-{CRIBL_VERSION}' not found: {e}")
 
-
-# ==== System Setup and Cribl Installation ====
+# ==== User and Permission Setup ====
 def check_connectivity(host, port):
     print("[+] Checking connectivity to Cribl Stream Leader...")
     try:
@@ -130,6 +122,7 @@ def set_permissions(path, user, group):
         for f in files:
             os.chown(os.path.join(root, f), uid, gid)
 
+# ==== Cribl Commands ====
 def run_as_cribl(cmd):
     full_cmd = ["sudo", "-u", CRIBL_USER] + cmd
     subprocess.run(full_cmd, check=True)
@@ -160,6 +153,7 @@ def start_cribl():
     time.sleep(3)
     subprocess.run(["systemctl", "status", "cribl", "--no-pager"])
 
+# ==== Fleet Management ====
 def create_fleet():
     print("[+] Creating Fleet...")
     headers = {
@@ -170,7 +164,7 @@ def create_fleet():
         "name": FLEET_NAME,
         "description": "Fleet created via script"
     }
-    response = requests.post(f"{LEADER_URL}/api/v1/fleets", headers=headers, data=json.dumps(data))
+    response = requests.post(f"{LEADER_URL}/api/v1/fleets", headers=headers, data=json.dumps(data), verify=False)
     if response.status_code == 201:
         print(f"Fleet '{repr(FLEET_NAME)}' created successfully.")
     elif response.status_code == 409:
@@ -188,10 +182,11 @@ def join_fleet():
         "--token", TOKEN
     ])
 
+# ==== Main Execution ====
 def main():
     if not check_connectivity(LEADER_IP, LEADER_PORT):
         sys.exit(1)
-    
+
     create_user(CRIBL_USER, CRIBL_GROUP)
     download_and_extract_tarball()
     set_permissions(CRIBL_DIR, CRIBL_USER, CRIBL_GROUP)
