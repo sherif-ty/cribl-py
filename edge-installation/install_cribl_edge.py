@@ -41,7 +41,7 @@ def read_config(file_path):
 # Load the configuration from 'config.txt'
 config = read_config('config.txt')
 
-# Read values
+# Read values from the config file
 CRIBL_USER = config['CRIBL_USER']
 CRIBL_GROUP = config['CRIBL_GROUP']
 EDGE_NAME = config['EDGE_NAME']
