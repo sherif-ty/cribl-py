@@ -34,14 +34,22 @@ def detect_leader_protocol(protocol, ip, port):
         raise Exception(f"Could not connect to Cribl Leader using {protocol}")
 
 def create_user(user, group):
-    os.system(f"sudo useradd -m -s /bin/bash {user}")
-    os.system(f"sudo groupadd {group}")
+    if os.system(f"id -u {user}") != 0:
+        os.system(f"sudo useradd -m -s /bin/bash {user}")
+    if os.system(f"getent group {group}") != 0:
+        os.system(f"sudo groupadd {group}")
     os.system(f"sudo usermod -aG {group} {user}")
 
 def download_and_extract_tarball():
     url = f"https://cdn.cribl.io/dl/cribl-{CRIBL_VERSION}-linux-x64.tgz"
-    os.system(f"wget {url} -O /tmp/cribl.tgz")
-    os.system(f"sudo tar -xzf /tmp/cribl.tgz -C {CRIBL_DIR}")
+    response = requests.get(url)
+    if response.status_code == 200:
+        with open("/tmp/cribl.tgz", "wb") as f:
+            f.write(response.content)
+        os.system(f"sudo tar -xzf /tmp/cribl.tgz -C {CRIBL_DIR}")
+    else:
+        print(f"Failed to download Cribl Edge: {response.status_code}")
+        sys.exit(1)
 
 def set_permissions(directory, user, group):
     os.system(f"sudo chown -R {user}:{group} {directory}")
@@ -56,6 +64,7 @@ def start_cribl():
     os.system("sudo systemctl start cribl")
 
 def main():
+    global LEADER_URL
     if not check_connectivity(LEADER_IP, LEADER_PORT):
         sys.exit(1)
     
