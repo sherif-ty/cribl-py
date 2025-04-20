@@ -99,8 +99,16 @@ def set_permissions():
 def bootstrap_edge():
     print("Step 6: Bootstrapping Cribl Edge with the Leader")
     try:
-        run(f"sudo -u {CRIBL_USER} {INSTALL_DIR}/bin/cribl mode-edge "
-            f"-H {LEADER_IP} -p {LEADER_PORT} --token {EDGE_TOKEN} --group {FLEET_NAME}")
+        token_file = os.path.join(INSTALL_DIR, "install-token.txt")
+        group_file = os.path.join(INSTALL_DIR, "install-group.txt")
+
+        with open(token_file, "w") as f:
+            f.write(EDGE_TOKEN)
+
+        with open(group_file, "w") as f:
+            f.write(FLEET_NAME)
+
+        run(f"sudo -u {CRIBL_USER} {INSTALL_DIR}/bin/cribl mode-edge -H {LEADER_IP} -p {LEADER_PORT}")
         print("Edge bootstrapped successfully.")
     except Exception as e:
         raise RuntimeError(f"Failed to bootstrap Cribl Edge: {e}")
