@@ -8,37 +8,32 @@ import subprocess
 # Cribl Edge Configuration
 # ===========================
 
-# Linux user and group to run Cribl Edge
 CRIBL_USER = "cribl"
 CRIBL_GROUP = "cribl"
 
-# Cribl Leader connection details
 LEADER_IP = "3.123.253.64"
 LEADER_PORT = 4200
 LEADER_PROTOCOL = "http"
-
-# Installation directory for Cribl
 CRIBL_DIR = "/opt/cribl"
 
-# API token with permissions to check/create fleets
-TOKEN = "eOHdmkvEJsN3QQvDz8T7tkQpV9SnYEqZ"
-
-# Fleet or sub-fleet name. Examples:
-#   "myfleet"             => will join or create a top-level fleet
-#   "myfleet/region-1"    => will join or create a sub-fleet
-#   "" (empty string)     => will join the default fleet
-#    "if the sub fleet empty" => will not create 
+# Fleet or sub-fleet to join or create.
+# Examples:
+#   "myfleet"           → top-level fleet
+#   "myfleet/region1"   → sub-fleet
+#   ""                  → join default fleet
 FLEET_NAME = "python-fleet"
+
+# Cribl Leader login credentials (used to create/check fleets)
+USERNAME = "admin"
+PASSWORD = "admin"
 
 # ===========================
 # Internal Variables
 # ===========================
 
 LEADER_URL = f"{LEADER_PROTOCOL}://{LEADER_IP}:{LEADER_PORT}"
-HEADERS = {
-    "Authorization": f"Bearer {TOKEN}",
-    "Content-Type": "application/json"
-}
+SESSION = requests.Session()
+AUTH_TOKEN = None
 
 # ===========================
 # Utility Functions
@@ -93,15 +88,35 @@ def set_permissions():
     run_command(f"sudo chown -R {CRIBL_USER}:{CRIBL_GROUP} {CRIBL_DIR}")
 
 # ===========================
-# Fleet Management Functions
+# Authentication
+# ===========================
+
+def login_and_get_token():
+    global AUTH_TOKEN
+    login_url = f"{LEADER_URL}/api/v1/auth/login"
+    try:
+        response = SESSION.post(login_url, json={"username": USERNAME, "password": PASSWORD})
+        response.raise_for_status()
+        AUTH_TOKEN = response.json().get("token")
+        SESSION.headers.update({
+            "Authorization": f"Bearer {AUTH_TOKEN}",
+            "Content-Type": "application/json"
+        })
+        print("Successfully authenticated with Cribl Leader.")
+    except Exception as e:
+        print(f"Authentication failed: {e}")
+        sys.exit(1)
+
+# ===========================
+# Fleet Management
 # ===========================
 
 def fleet_exists(fleet_name):
     if not fleet_name:
-        return True  # No fleet to check, using default
+        return True
     url = f"{LEADER_URL}/api/v1/fleets"
     try:
-        response = requests.get(url, headers=HEADERS)
+        response = SESSION.get(url)
         response.raise_for_status()
         fleets = response.json().get("fleets", [])
         return any(fleet.get("name") == fleet_name for fleet in fleets)
@@ -113,7 +128,7 @@ def create_fleet(fleet_name):
     url = f"{LEADER_URL}/api/v1/fleets"
     payload = {"name": fleet_name}
     try:
-        response = requests.post(url, json=payload, headers=HEADERS)
+        response = SESSION.post(url, json=payload)
         response.raise_for_status()
         print(f"Created fleet: {fleet_name}")
     except Exception as e:
@@ -132,7 +147,7 @@ def ensure_fleet(fleet_name):
         create_fleet(fleet_name)
 
 # ===========================
-# Cribl Edge Setup Functions
+# Cribl Edge Setup
 # ===========================
 
 def bootstrap_edge():
@@ -161,6 +176,7 @@ def main():
     if not check_connectivity(LEADER_IP, LEADER_PORT):
         sys.exit(1)
 
+    login_and_get_token()
     create_user_and_group(CRIBL_USER, CRIBL_GROUP)
     download_and_extract_tarball()
     set_permissions()
