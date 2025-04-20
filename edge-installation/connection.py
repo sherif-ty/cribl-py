@@ -16,14 +16,10 @@ LEADER_PORT = 4200
 LEADER_PROTOCOL = "http"
 CRIBL_DIR = "/opt/cribl"
 
-# Fleet or sub-fleet to join or create.
-# Examples:
-#   "myfleet"           → top-level fleet
-#   "myfleet/region1"   → sub-fleet
-#   ""                  → join default fleet
+# Fleet or sub-fleet to join or create
 FLEET_NAME = "python-fleet"
 
-# Login credentials for Cribl Leader (self-hosted)
+# Login credentials for Cribl Leader
 USERNAME = "admin"
 PASSWORD = "admin"
 
@@ -33,6 +29,11 @@ PASSWORD = "admin"
 
 LEADER_URL = f"{LEADER_PROTOCOL}://{LEADER_IP}:{LEADER_PORT}"
 SESSION = requests.Session()
+HEADERS = {
+    "Content-Type": "application/json",
+    "Accept": "application/json"
+}
+TOKEN = None
 
 # ===========================
 # Utility Functions
@@ -87,17 +88,21 @@ def set_permissions():
     run_command(f"sudo chown -R {CRIBL_USER}:{CRIBL_GROUP} {CRIBL_DIR}")
 
 # ===========================
-# Authentication (Self-hosted)
+# Authentication (Bearer Token)
 # ===========================
 
-def login_and_get_session():
+def login_and_get_token():
+    global TOKEN, HEADERS
     login_url = f"{LEADER_URL}/api/v1/auth/login"
     payload = {"username": USERNAME, "password": PASSWORD}
     try:
         response = SESSION.post(login_url, json=payload)
         response.raise_for_status()
-        SESSION.headers.update({"Content-Type": "application/json"})
-        print("Successfully authenticated with Cribl Leader using session cookie.")
+        TOKEN = response.json().get("token")
+        if not TOKEN:
+            raise Exception("No token found in login response.")
+        HEADERS["Authorization"] = f"Bearer {TOKEN}"
+        print("Successfully authenticated and retrieved API token.")
     except Exception as e:
         print(f"Authentication failed: {e}")
         sys.exit(1)
@@ -111,7 +116,7 @@ def fleet_exists(fleet_name):
         return True
     url = f"{LEADER_URL}/api/v1/fleets"
     try:
-        response = SESSION.get(url)
+        response = SESSION.get(url, headers=HEADERS)
         response.raise_for_status()
         fleets = response.json().get("fleets", [])
         return any(fleet.get("name") == fleet_name for fleet in fleets)
@@ -123,7 +128,7 @@ def create_fleet(fleet_name):
     url = f"{LEADER_URL}/api/v1/fleets"
     payload = {"name": fleet_name}
     try:
-        response = SESSION.post(url, json=payload)
+        response = SESSION.post(url, json=payload, headers=HEADERS)
         response.raise_for_status()
         print(f"Created fleet: {fleet_name}")
     except Exception as e:
@@ -171,7 +176,7 @@ def main():
     if not check_connectivity(LEADER_IP, LEADER_PORT):
         sys.exit(1)
 
-    login_and_get_session()
+    login_and_get_token()
     create_user_and_group(CRIBL_USER, CRIBL_GROUP)
     download_and_extract_tarball()
     set_permissions()
