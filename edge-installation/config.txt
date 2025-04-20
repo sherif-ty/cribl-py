@@ -1,12 +1,9 @@
-CRIBL_USER=cribl
-CRIBL_GROUP=cribl
-EDGE_NAME=my-edge-node
-LEADER_IP=3.123.253.64
-LEADER_PORT=9000
-LEADER_PROTOCOL=http
-CRIBL_VERSION=4.11.0
-CRIBL_TARBALL_NAME=cribl-edge-4.11.0-linux-x64.tgz
-CRIBL_DIR=/opt/cribl
-TOKEN=your_actual_token_here
-FLEET_NAME=my-fleet
-
+ENVIRONMENT = linux
+CRIBL_USER = cribl
+CRIBL_GROUP = cribl
+INSTALL_DIR = /opt/cribl
+LEADER_IP = 3.123.253.64
+LEADER_PORT = 9000
+EDGE_TOKEN = eOHdmkvEJsN3QQvDz8T7tkQpV9SnYEqZ
+FLEET_NAME = default_fleet
+CRIBL_VERSION = 4.11.0

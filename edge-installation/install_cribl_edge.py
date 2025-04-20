@@ -1,200 +1,156 @@
 import os
-import subprocess
-import shutil
-import pwd
-import grp
-import socket
-import time
-import sys
-import json
-import requests
 import platform
+import subprocess
+import socket
+import urllib.parse
+import sys
 
-# Disable insecure request warnings
-requests.packages.urllib3.disable_warnings()
+# ----------------------------
+# Config Loader
+# ----------------------------
 
-def detect_leader_protocol(protocol, host, port):
-    url = f"http://{host}:{port}/api/v1/version"
-    try:
-        response = requests.get(url, timeout=5)
-        if response.status_code == 200:
-            print("[+] Detected working protocol: HTTP")
-            return url.replace("/api/v1/version", "")
-    except requests.exceptions.RequestException as e:
-        print(f"[!] HTTP failed: {e}")
-    raise Exception("Could not connect to Cribl Leader using HTTP")
-
-
-# ==== Read Configuration from File ====
-def read_config(file_path):
+def load_config(file_path):
     config = {}
-    with open(file_path, 'r') as file:
-        for line in file:
-            line = line.strip()
-            if line and '=' in line:
-                name, value = line.split('=', 1)
-                config[name] = value
+    with open(file_path) as f:
+        for line in f:
+            if line.strip() and not line.strip().startswith("#"):
+                key, value = line.strip().split("=", 1)
+                config[key.strip()] = value.strip()
     return config
 
-# Load the configuration from 'config.txt'
-config = read_config('config.txt')
+# ----------------------------
+# Load Config
+# ----------------------------
 
-# Read values from the config file
-CRIBL_USER = config['CRIBL_USER']
-CRIBL_GROUP = config['CRIBL_GROUP']
-EDGE_NAME = config['EDGE_NAME']
-LEADER_IP = config['LEADER_IP']
-LEADER_PORT = int(config['LEADER_PORT'])
-LEADER_PROTOCOL = config['LEADER_PROTOCOL']
-CRIBL_VERSION = config['CRIBL_VERSION']
-CRIBL_TARBALL_NAME = config['CRIBL_TARBALL_NAME']
-CRIBL_DIR = config['CRIBL_DIR']
-TOKEN = config['TOKEN']
-FLEET_NAME = config['FLEET_NAME']
+config = load_config("config.txt")
 
-# Form leader URL using the protocol from the config
-LEADER_URL = detect_leader_protocol(LEADER_PROTOCOL, LEADER_IP, LEADER_PORT)
+ENVIRONMENT = config["ENVIRONMENT"]
+CRIBL_USER = config["CRIBL_USER"]
+CRIBL_GROUP = config["CRIBL_GROUP"]
+INSTALL_DIR = config["INSTALL_DIR"]
+LEADER_IP = config["LEADER_IP"]
+LEADER_PORT = int(config["LEADER_PORT"])
+EDGE_TOKEN = config["EDGE_TOKEN"]
+FLEET_NAME = config["FLEET_NAME"]
+CRIBL_VERSION = config["CRIBL_VERSION"]
 
-# ==== Detect System Architecture ====
-def detect_architecture():
-    arch = platform.machine().lower()
-    if "x86_64" in arch:
-        return "x64"
-    elif "aarch64" in arch:
-        return "arm64"
-    else:
-        raise Exception("Unsupported architecture: " + arch)
+# ----------------------------
+# Utility
+# ----------------------------
 
-# ==== Download and Extract Cribl ====
-def download_and_extract_tarball():
-    os.makedirs(CRIBL_DIR, exist_ok=True)
-    os.chdir("/opt")
+def run(command, check=True):
+    print(f"\nRunning: {command}")
+    result = subprocess.run(command, shell=True, capture_output=True, text=True)
+    if result.stdout:
+        print(result.stdout.strip())
+    if result.stderr:
+        print(result.stderr.strip())
+    if check and result.returncode != 0:
+        raise RuntimeError(f"Command failed: {command}")
 
-    architecture = detect_architecture()
-    tarball_url = f"https://cdn.cribl.io/dl/latest-{architecture}"
-    print(f"[+] Downloading Cribl Edge for {architecture} architecture from {tarball_url}")
-    
+# ----------------------------
+# Linux Installation Steps
+# ----------------------------
+
+def check_connectivity():
+    print(f"Checking connectivity to {LEADER_IP}:{LEADER_PORT}")
     try:
-        download_url = subprocess.getoutput(f"curl -s {tarball_url}")
-        subprocess.run(f"curl -Lso - {download_url} | tar zxv", shell=True, check=True)
-        print("[+] Extracted files:")
-        subprocess.run("ls -l", shell=True)
-        os.rename(f"cribl-edge-{CRIBL_VERSION}", "cribl-edge")
-        shutil.move("cribl-edge", CRIBL_DIR)
-    except subprocess.CalledProcessError as e:
-        print(f"[!] Failed to download or extract Cribl Edge: {e}")
-    except FileNotFoundError as e:
-        print(f"[!] Directory 'cribl-edge-{CRIBL_VERSION}' not found: {e}")
+        with socket.create_connection((LEADER_IP, LEADER_PORT), timeout=5):
+            print("Cribl Leader is reachable.")
+    except Exception as e:
+        raise RuntimeError(f"Could not connect to Cribl Leader at {LEADER_IP}:{LEADER_PORT}: {e}")
 
-# ==== User and Permission Setup ====
-def check_connectivity(host, port):
-    print("[+] Checking connectivity to Cribl Stream Leader...")
-    try:
-        with socket.create_connection((host, port), timeout=5):
-            print(f"Cribl Stream Leader is reachable at {host}:{port}")
-            return True
-    except socket.error:
-        print(f"Cannot reach Cribl Stream Leader at {host}:{port}")
-        return False
+def create_user_group():
+    print("Creating cribl system user and group if they don't exist")
+    run(f"id -u {CRIBL_USER} || sudo useradd -m -s /bin/bash {CRIBL_USER}", check=False)
+    run(f"getent group {CRIBL_GROUP} || sudo groupadd {CRIBL_GROUP}", check=False)
+    run(f"sudo usermod -aG {CRIBL_GROUP} {CRIBL_USER}", check=False)
 
-def create_user(username, groupname):
-    try:
-        pwd.getpwnam(username)
-        print(f"[+] User {repr(username)} already exists")
-    except KeyError:
-        print(f"[+] Creating user {repr(username)}")
-        subprocess.run(["useradd", "-r", "-s", "/bin/false", username], check=True)
-    
-    try:
-        grp.getgrnam(groupname)
-    except KeyError:
-        subprocess.run(["groupadd", groupname], check=True)
+def set_permissions():
+    print("Ensuring permissions on installation directory")
+    run(f"sudo mkdir -p {INSTALL_DIR}")
+    run(f"sudo chown -R {CRIBL_USER}:{CRIBL_GROUP} {INSTALL_DIR}")
 
-def set_permissions(path, user, group):
-    uid = pwd.getpwnam(user).pw_uid
-    gid = grp.getgrnam(group).gr_gid
-    for root, dirs, files in os.walk(path):
-        os.chown(root, uid, gid)
-        for d in dirs:
-            os.chown(os.path.join(root, d), uid, gid)
-        for f in files:
-            os.chown(os.path.join(root, f), uid, gid)
+def restart_and_verify_service():
+    print("Restarting Cribl Edge service")
+    run("sudo systemctl restart cribl")
+    run("sudo systemctl status cribl", check=False)
 
-# ==== Cribl Commands ====
-def run_as_cribl(cmd):
-    full_cmd = ["sudo", "-u", CRIBL_USER] + cmd
-    subprocess.run(full_cmd, check=True)
+def install_linux():
+    check_connectivity()
+    create_user_group()
+    set_permissions()
 
-def bootstrap_edge():
-    print("[+] Registering Edge with Leader...")
-    os.chdir(f"{CRIBL_DIR}/cribl-edge")
-    run_as_cribl([
-        "./bin/cribl", "edge:bootstrap",
-        "--edge-name", EDGE_NAME,
-        "--controller", LEADER_URL,
-        "--token", TOKEN
-    ])
+    print("Installing Cribl Edge using the install-edge.sh script")
+    encoded_dir = urllib.parse.quote(INSTALL_DIR)
+    url = f"http://{LEADER_IP}:{LEADER_PORT}/init/install-edge.sh" \
+          f"?group={FLEET_NAME}&token={EDGE_TOKEN}" \
+          f"&user={CRIBL_USER}&user_group={CRIBL_GROUP}&install_dir={encoded_dir}"
+    run(f"curl '{url}' | bash -")
 
-def enable_systemd():
-    print("[+] Enabling Cribl as systemd service...")
-    subprocess.run([
-        "./bin/cribl", "boot-start", "enable",
-        "--user", CRIBL_USER,
-        "--group", CRIBL_GROUP
-    ], cwd=f"{CRIBL_DIR}/cribl-edge", check=True)
+    restart_and_verify_service()
+    print("Cribl Edge for Linux installed and started.")
 
-def start_cribl():
-    subprocess.run(["systemctl", "daemon-reexec"], check=True)
-    subprocess.run(["systemctl", "start", "cribl"], check=True)
-    subprocess.run(["systemctl", "enable", "cribl"], check=True)
-    print("[+] Waiting for Cribl to start...")
-    time.sleep(3)
-    subprocess.run(["systemctl", "status", "cribl", "--no-pager"])
+# ----------------------------
+# Other Environments
+# ----------------------------
 
-# ==== Fleet Management ====
-def create_fleet():
-    print("[+] Creating Fleet...")
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {TOKEN}"
-    }
-    data = {
-        "name": FLEET_NAME,
-        "description": "Fleet created via script"
-    }
-    response = requests.post(f"{LEADER_URL}/api/v1/fleets", headers=headers, data=json.dumps(data), verify=False)
-    if response.status_code == 201:
-        print(f"Fleet '{repr(FLEET_NAME)}' created successfully.")
-    elif response.status_code == 409:
-        print(f"Fleet '{repr(FLEET_NAME)}' already exists.")
-    else:
-        print(f"Failed to create Fleet: {repr(response.text)}")
+def install_windows():
+    print("Windows installation command:")
+    command = (
+        f"Start-Process msiexec -ArgumentList '/i', "
+        f"'https://cdn.cribl.io/dl/{CRIBL_VERSION}/cribl-{CRIBL_VERSION}-win32-x64.msi', '/qn', "
+        f"'MODE=\"mode-managed-edge\"', 'HOSTNAME=\"{LEADER_IP}\"', 'PORT=\"4200\"', "
+        f"'FLEET=\"{FLEET_NAME}\"', 'AUTH=\"{EDGE_TOKEN}\"', 'TLS=\"false\"', 'USERNAME=\"LocalSystem\"', "
+        f"'APPLICATIONROOTDIRECTORY=\"C:\\Program Files\\Cribl\\\"', '/l*v', "
+        f"$env:SYSTEMROOT\\Temp\\cribl-msiexec.log"
+    )
+    print(command)
 
-def join_fleet():
-    print("[+] Joining Fleet...")
-    os.chdir(f"{CRIBL_DIR}/cribl-edge")
-    run_as_cribl([
-        "./bin/cribl", "edge:join-fleet",
-        "--fleet", FLEET_NAME,
-        "--controller", LEADER_URL,
-        "--token", TOKEN
-    ])
+def install_docker():
+    print("Docker installation command:")
+    command = (
+        f"docker run -d --privileged "
+        f"-e \"CRIBL_DIST_MASTER_URL=tcp://{EDGE_TOKEN}@{LEADER_IP}:4200?group={FLEET_NAME}\" "
+        f"-e \"CRIBL_DIST_MODE=managed-edge\" "
+        f"-e \"CRIBL_EDGE=1\" "
+        f"-p 9420:9420 "
+        f"-v \"/:/hostfs:ro\" "
+        f"--restart unless-stopped "
+        f"--name \"cribl-edge\" "
+        f"cribl/cribl:{CRIBL_VERSION}"
+    )
+    print(command)
 
-# ==== Main Execution ====
+def install_kubernetes():
+    print("Kubernetes Helm command:")
+    command = (
+        f"helm install --repo \"https://criblio.github.io/helm-charts/\" "
+        f"--version \"^{CRIBL_VERSION}\" --create-namespace "
+        f"-n \"cribl\" --set \"cribl.leader=tcp://{EDGE_TOKEN}@{LEADER_IP}?group={FLEET_NAME}\" "
+        f"\"cribl-edge\" edge"
+    )
+    print(command)
+
+# ----------------------------
+# Main
+# ----------------------------
+
 def main():
-    if not check_connectivity(LEADER_IP, LEADER_PORT):
+    try:
+        if ENVIRONMENT == "linux":
+            install_linux()
+        elif ENVIRONMENT == "windows":
+            install_windows()
+        elif ENVIRONMENT == "docker":
+            install_docker()
+        elif ENVIRONMENT == "kubernetes":
+            install_kubernetes()
+        else:
+            raise ValueError(f"Unsupported environment: {ENVIRONMENT}")
+    except Exception as error:
+        print(f"\nInstallation failed: {error}")
         sys.exit(1)
-
-    create_user(CRIBL_USER, CRIBL_GROUP)
-    download_and_extract_tarball()
-    set_permissions(CRIBL_DIR, CRIBL_USER, CRIBL_GROUP)
-    create_fleet()
-    bootstrap_edge()
-    join_fleet()
-    enable_systemd()
-    start_cribl()
-
-    print(f"\n Cribl Edge installed, connected to Leader at {LEADER_URL}, and joined Fleet '{repr(FLEET_NAME)}'")
 
 if __name__ == "__main__":
     main()
