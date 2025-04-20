@@ -24,6 +24,10 @@ def detect_leader_protocol(host, port):
             if response.status_code == 200:
                 print(f"[+] Detected working protocol: {protocol.upper()}")
                 return f"{protocol}://{host}:{port}"
+            elif response.status_code == 401:
+                # 401 Unauthorized is treated as a successful connection attempt (requires token)
+                print(f"[+] {protocol.upper()} returned 401 Unauthorized, which indicates the service is reachable.")
+                return f"{protocol}://{host}:{port}"
         except requests.exceptions.RequestException as e:
             print(f"[!] {protocol.upper()} failed: {e}")
     raise Exception("Could not connect to Cribl Leader using HTTP or HTTPS")
