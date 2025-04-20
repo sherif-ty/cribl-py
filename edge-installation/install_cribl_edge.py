@@ -1,7 +1,5 @@
 import os
 import subprocess
-import urllib.request
-import tarfile
 import shutil
 import pwd
 import grp
@@ -17,9 +15,7 @@ requests.packages.urllib3.disable_warnings()
 
 # ==== Helper: Detect HTTP or HTTPS Protocol ====
 def detect_leader_protocol(protocol, host, port):
-    # List of protocols to try
     protocols = [protocol, 'https' if protocol == 'http' else 'http']
-    
     for prot in protocols:
         try:
             url = f"{prot}://{host}:{port}/api/v1/version"
@@ -29,8 +25,6 @@ def detect_leader_protocol(protocol, host, port):
                 return f"{prot}://{host}:{port}"
         except requests.exceptions.RequestException as e:
             print(f"[!] {prot.upper()} failed: {e}")
-
-    # If both protocols fail
     raise Exception(f"Could not connect to Cribl Leader using either HTTP or HTTPS")
 
 # ==== Read Configuration from File ====
