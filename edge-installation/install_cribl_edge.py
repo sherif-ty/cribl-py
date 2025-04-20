@@ -16,16 +16,16 @@ import platform
 requests.packages.urllib3.disable_warnings()
 
 # ==== Helper: Detect HTTP or HTTPS Protocol ====
-def detect_leader_protocol(protocol, host, port):
-    try:
-        url = f"{protocol}://{host}:{port}/api/v1/version"
-        response = requests.get(url, timeout=5, verify=False)
-        if response.status_code == 200:
-            print(f"[+] Detected working protocol: {protocol.upper()}")
-            return f"{protocol}://{host}:{port}"
-    except requests.exceptions.RequestException as e:
-        print(f"[!] {protocol.upper()} failed: {e}")
-    raise Exception(f"Could not connect to Cribl Leader using {protocol.upper()}")
+# def detect_leader_protocol(protocol, host, port):
+#     try:
+#         url = f"{protocol}://{host}:{port}/api/v1/version"
+#         response = requests.get(url, timeout=5, verify=False)
+#         if response.status_code == 200:
+#             print(f"[+] Detected working protocol: {protocol.upper()}")
+#             return f"{protocol}://{host}:{port}"
+#     except requests.exceptions.RequestException as e:
+#         print(f"[!] {protocol.upper()} failed: {e}")
+#     raise Exception(f"Could not connect to Cribl Leader using {protocol.upper()}")
 
 # ==== Read Configuration from File ====
 def read_config(file_path):
