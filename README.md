@@ -1,78 +1,114 @@
+# Cribl-Py: Manage Cribl with Python
 
-# Cribl Edge Installer (Manual Bootstrap)
+`cribl-py` is a Python-based automation tool designed to help you manage various aspects of your Cribl environment — from installing Cribl Edge nodes to managing fleets and configurations via API.
 
-This script automates the full setup of Cribl Edge on a Linux server and registers it with a Cribl Stream Leader.
+This repository is modular, starting with an **Edge installer**, and will continue to expand into a full-featured toolkit for Cribl automation.
 
-## What It Does
+---
 
-- Checks connectivity to Cribl Stream Leader (IP + Port)
-- Ensures TCP port (default: 4200) is reachable
-- Downloads and installs Cribl Edge
-- Creates a dedicated `cribl` system user
-- Bootstraps Edge to the leader using a secure token
-- Configures systemd service for auto-start
-- Starts and enables Cribl Edge
-- **Creates and joins a Fleet** (new functionality)
+## 1. Cribl Edge Installer
 
-## Folder Structure
-```sh
-cribl_edge_installer/
-├── install_cribl_edge.py     # Main installer script
-├── config.txt                # Configuration file (these data will find it when adding edge/nodes)
+This module provides a simple and automated way to install **Cribl Edge** across different environments including **Linux**, **Windows**, **Docker**, and **Kubernetes**.
+
+The installation logic is driven by a config file (`config.txt`) that defines how and where Cribl Edge will be installed.
+
+---
+
+## What this does
+
+This Python-based installer:
+
+1. Checks connectivity to the Cribl Leader
+2. Prepares the system (Linux only: creates user, sets permissions)
+3. Automatically downloads and installs Cribl Edge
+4. Registers the Edge node with the Cribl Leader
+5. Supports multiple deployment options:
+   - Linux (auto-install and register)
+   - Windows (generates a PowerShell command)
+   - Docker (generates `docker run` command)
+   - Kubernetes (generates `helm install` command)
+
+---
+
+## Project Structure
+
+```
+cribl-py/
+├── install_cribl_edge.py     # Edge installer logic
+├── config.txt                # Configuration file (used to customize install)
 ├── README.md                 # You're reading it
-├── requirements.txt          # Python dependencies
-└── run.sh                    # Optional shell wrapper
+├── requirements.txt          # Python dependencies (currently empty or 'requests' if needed)
+└── run.sh                    # Optional shell wrapper to execute the script
 ```
 
-## Requirements
+---
 
-- Python 3.x
-- `sudo` access
-- Internet access (for downloading Cribl Edge)
-- port 4200 open in the Edge machine
+## Configuration (config.txt)
 
-## Configuration File
+Edit `config.txt` to define your environment and target connection details:
 
-Create a `config.txt` file with the following content:
-```sh
-CRIBL_USER=cribl
-CRIBL_GROUP=cribl
-EDGE_NAME=edge-server2
-LEADER_IP=10.0.0.1
-LEADER_PORT=4200
-CRIBL_VERSION=4.5.2
-CRIBL_DIR=/opt/cribl
-TOKEN=your-token-from-stream-ui
-FLEET_NAME=my-fleet
+```ini
+ENVIRONMENT = linux  # Options: linux, windows, docker, kubernetes
+CRIBL_USER = cribl
+CRIBL_GROUP = cribl
+INSTALL_DIR = /opt/cribl
+LEADER_IP = 3.123.253.64
+LEADER_PORT = 9000
+EDGE_TOKEN = eOHdmkvEJsN3QQvDz8T7tkQpV9SnYEqZ
+FLEET_NAME = default_fleet
+CRIBL_VERSION = 4.11.0
 ```
 
-## Python Dependencies
+---
 
-Install them via:
-```sh
-# Option 1: Run the Python file
-pip install -r requirements.txt
-sudo python3 install_cribl_edge.py
+## How to Run
 
-# Option 2: Run the shell file
-chmod +x run.sh
-./run.sh
+### Option 1: Direct Python Execution
+
+```bash
+python3 install_cribl_edge.py
 ```
 
-### NOTE ###
-If you don't want to create a fleet, you can simply remove or comment out the create_fleet() and join_fleet() function calls in the main() function. Here's the modified main() function
-```sh
-def main():
-    if not check_connectivity(LEADER_IP, LEADER_PORT):
-        sys.exit(1)
-    
-    create_user(CRIBL_USER, CRIBL_GROUP)
-    download_and_extract_tarball()
-    set_permissions(CRIBL_DIR, CRIBL_USER, CRIBL_GROUP)
-    # create_fleet()  # Commented out
-    bootstrap_edge()
-    # join_fleet()  # Commented out
-    enable_systemd()
-    start_cribl()
-    print(f"\n Cribl Edge installed and connected to Leader at {LEADER_URL}")
+### Option 2: Shell Wrapper
+
+```bash
+sh run.sh
 ```
+
+This will:
+- Install any Python dependencies from `requirements.txt`
+- Run the installer using the configuration from `config.txt`
+
+---
+
+## Supported Environments to Configure by Python
+
+| Environment | Action |
+|------------|--------|
+| **Linux** | Performs full automated installation, including Cribl-provided `install-edge.sh` logic |
+| **Windows** | Prints a PowerShell command for manual execution |
+| **Docker** | Prints a `docker run` command for manual use |
+| **Kubernetes** | Prints a `helm install` command for use with Helm charts |
+
+---
+
+## Roadmap: What's Next
+
+- Detect and join existing Cribl Fleets and Sub-Fleets using API
+- Dynamically create Fleets/Sub-Fleets if not found
+- Manage and assign Edge nodes (move, remove, label)
+- Upload and sync packs or pipelines
+- Secure API integration with login token management
+
+This is just the beginning — `cribl-py` aims to be your go-to Python toolkit for automating all things Cribl.
+
+---
+
+## Notes
+
+- Ensure your Cribl Leader allows registration from the node you're running this on
+- Use a fresh Edge token for each install (tokens are often single-use)
+- This project is meant for testing, automation, and bootstrapping
+
+Feel free to fork or extend it as needed.
+
