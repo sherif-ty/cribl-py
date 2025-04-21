@@ -96,7 +96,7 @@ This will:
 
 ## Roadmap: What's Next
 
-- Detect and join existing Cribl Fleets and Sub-Fleets using API
+- Detect and join existing Cribl Sub-Fleets using API
 - Dynamically create Fleets/Sub-Fleets if not found
 - Manage and assign Edge nodes (move, remove, label)
 - Upload and sync packs or pipelines
