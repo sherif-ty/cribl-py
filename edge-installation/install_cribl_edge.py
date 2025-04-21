@@ -40,7 +40,7 @@ CRIBL_VERSION = config["CRIBL_VERSION"]
 
 def run(command, check=True):
     print(f"\nRunning: {command}")
-    result = subprocess.run(command, shell=True, capture_output=True, text=True)
+    result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if result.stdout:
         print(result.stdout.strip())
     if result.stderr:
