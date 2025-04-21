@@ -73,8 +73,8 @@ def set_permissions():
 
 def restart_and_verify_service():
     print("Restarting Cribl Edge service")
-    run("sudo systemctl restart cribl")
-    run("sudo systemctl status cribl", check=False)
+    run("sudo systemctl restart cribl-edge")
+    run("sudo systemctl status cribl-edge", check=False)
 
 def install_linux():
     check_connectivity()
