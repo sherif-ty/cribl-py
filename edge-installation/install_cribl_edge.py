@@ -94,6 +94,7 @@ def install_linux():
 # ----------------------------
 # Other Environments
 # ----------------------------
+
 def install_windows():
     print("Windows installation command:")
     command = (
