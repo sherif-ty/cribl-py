@@ -40,7 +40,7 @@ CRIBL_VERSION = config["CRIBL_VERSION"]
 
 def run(command, check=True):
     print(f"\nRunning: {command}")
-    result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
     if result.stdout:
         print(result.stdout.strip())
     if result.stderr:
@@ -94,7 +94,6 @@ def install_linux():
 # ----------------------------
 # Other Environments
 # ----------------------------
-
 def install_windows():
     print("Windows installation command:")
     command = (
