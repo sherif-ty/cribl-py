@@ -110,5 +110,4 @@ This will:
 - Use a fresh Edge token for each install (tokens are often single-use)
 - This project is meant for testing, automation, and bootstrapping
 
-Feel free to fork or extend it as needed.
 
