@@ -6,6 +6,22 @@ This repository is modular, starting with an **Edge installer**, and will contin
 
 ---
 
+## Version 1.2.0
+
+### Release Notes
+- Fixed the Windows installation script
+- Added a small note for users to check the environment OS in the config file and, in case they are using Windows, to add the `For_Windows_cribl_pkg_url` link.
+  Example: `For_Windows_cribl_pkg_url=https://cdn.cribl.io/dl/4.9.3/cribl-4.9.3-25d56bdd-win32-x64.msi`
+
+### Upcoming Changes
+- Make the script set the environment proxy inside the system registry for Windows, systemd for Linux
+- Dynamically create Fleets/Sub-Fleets if not found
+- Manage and assign Edge nodes (move, remove, label)
+- Upload and sync packs or pipelines
+- Secure API integration with login token management
+- Create separate module for each environment
+
+
 ## 1. Cribl Edge Installer
 
 This module provides a simple and automated way to install Cribl Edge across different environments including Linux, Windows, Docker, and Kubernetes with Python.
@@ -94,20 +110,10 @@ This will:
 
 ---
 
-## Roadmap: What's Next
-
-- Detect and join existing Cribl Sub-Fleets using API
-- Dynamically create Fleets/Sub-Fleets if not found
-- Manage and assign Edge nodes (move, remove, label)
-- Upload and sync packs or pipelines
-- Secure API integration with login token management
-
----
-
 ## Notes
 
 - Ensure your Cribl Leader allows registration from the node you're running this on
 - Use a fresh Edge token for each install (tokens are often single-use)
 - This project is meant for testing, automation, and bootstrapping
-
+---
 

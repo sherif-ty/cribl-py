@@ -98,29 +98,33 @@ def install_linux():
 def install_windows():
     print("Windows installation command:")
     
-    # Example values for the variables (replace these with actual values)
-    CRIBL_VERSION = "4.4.0"
-    LEADER_IP = "10.0.2.27"
-    FLEET_NAME = "defaultFleet"
-    EDGE_TOKEN = "your_token_here"
-    msi_url = f"https://cdn.cribl.io/dl/{CRIBL_VERSION}/cribl-{CRIBL_VERSION}-win32-x64.msi"
-    install_dir = r"C:\Program Files\cribl"
+    # Load configuration values
+    config = load_config("config.txt")
+    FOR_WINDOWS_CRIBL_PKG_URL = config["For_Windows_cribl_pkg_url"]
+    LEADER_IP = config["LEADER_IP"]
+    EDGE_TOKEN = config["EDGE_TOKEN"]
+    FLEET_NAME = config["FLEET_NAME"]
     
-    # Construct the msiexec command directly
-    command = [
-        "msiexec", "/i", msi_url, "/qn",
-        f"MODE=mode-managed-edge", f"HOSTNAME={LEADER_IP}", "PORT=4200",
-        f"FLEET={FLEET_NAME}", f"AUTH={EDGE_TOKEN}", "TLS=false",
-        "USERNAME=LocalSystem", f"APPLICATIONROOTDIRECTORY={install_dir}"
-    ]
+    # Construct the msiexec command using values from the config file
+    command = f'msiexec /i "{FOR_WINDOWS_CRIBL_PKG_URL}" /qn MODE=mode-managed-edge HOSTNAME={LEADER_IP} PORT=4200 AUTH={EDGE_TOKEN} FLEET={FLEET_NAME}'
     
     if platform.system() == "Windows":
-        result = subprocess.run(command, capture_output=True, text=True)
+        print(f"Running command: {command}")
+        result = subprocess.run(command, shell=True, capture_output=True, text=True)
         print(f"Return code: {result.returncode}")
         print(f"Standard output: {result.stdout}")
         print(f"Standard error: {result.stderr}")
+        
+        if result.returncode == 0:
+            # Restart the Cribl service
+            run("net stop cribl")
+            run("net start cribl")
+            print("Installation done successfully.")
+        else:
+            raise RuntimeError(f"Installation failed with return code {result.returncode}")
     else:
         print("This script must be run in a Windows environment.")
+
         
 def install_docker():
     print("Docker installation command:")
