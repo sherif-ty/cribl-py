@@ -99,16 +99,36 @@ def install_linux():
 
 def install_windows():
     print("Windows installation command:")
+    
+    # Debug: Print the values of the variables used in the command
+    print(f"CRIBL_VERSION: {CRIBL_VERSION}")
+    print(f"LEADER_IP: {LEADER_IP}")
+    print(f"FLEET_NAME: {FLEET_NAME}")
+    print(f"EDGE_TOKEN: {EDGE_TOKEN}")
+    
     command = (
         f"Start-Process msiexec -ArgumentList '/i', "
-        f"'https://cdn.cribl.io/dl/{CRIBL_VERSION}/cribl-{CRIBL_VERSION}-x64.msi', '/qn', "
+        f"'https://cdn.cribl.io/dl/{CRIBL_VERSION}/cribl-{CRIBL_VERSION}-win32-x64.msi', '/qn', "
         f"'MODE=\"mode-managed-edge\"', 'HOSTNAME=\"{LEADER_IP}\"', 'PORT=\"4200\"', "
         f"'FLEET=\"{FLEET_NAME}\"', 'AUTH=\"{EDGE_TOKEN}\"', 'TLS=\"false\"', 'USERNAME=\"LocalSystem\"', "
         f"'APPLICATIONROOTDIRECTORY=\"C:\\Program Files\\Cribl\\\"', '/l*v', "
         f"$env:SYSTEMROOT\\Temp\\cribl-msiexec.log"
     )
-    print(command)
-
+    
+    # Debug: Print the constructed command
+    print(f"Constructed command: {command}")
+    
+    # Check if running in Windows environment
+    if platform.system() == "Windows":
+        # Execute the command and capture the output
+        result = subprocess.run(command, shell=True, capture_output=True, text=True)
+        
+        # Debug: Print the result of the command execution
+        print(f"Return code: {result.returncode}")
+        print(f"Standard output: {result.stdout}")
+        print(f"Standard error: {result.stderr}")
+    else:
+        print("This script must be run in a Windows environment.")
 
 
 def install_docker():
