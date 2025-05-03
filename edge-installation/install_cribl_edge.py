@@ -95,17 +95,21 @@ def install_linux():
 # Other Environments
 # ----------------------------
 
+
+
 def install_windows():
     print("Windows installation command:")
     command = (
         f"Start-Process msiexec -ArgumentList '/i', "
-        f"'https://cdn.cribl.io/dl/{CRIBL_VERSION}/cribl-{CRIBL_VERSION}-win32-x64.msi', '/qn', "
+        f"'https://cdn.cribl.io/dl/{CRIBL_VERSION}/cribl-{CRIBL_VERSION}-x64.msi', '/qn', "
         f"'MODE=\"mode-managed-edge\"', 'HOSTNAME=\"{LEADER_IP}\"', 'PORT=\"4200\"', "
         f"'FLEET=\"{FLEET_NAME}\"', 'AUTH=\"{EDGE_TOKEN}\"', 'TLS=\"false\"', 'USERNAME=\"LocalSystem\"', "
         f"'APPLICATIONROOTDIRECTORY=\"C:\\Program Files\\Cribl\\\"', '/l*v', "
         f"$env:SYSTEMROOT\\Temp\\cribl-msiexec.log"
     )
     print(command)
+
+
 
 def install_docker():
     print("Docker installation command:")
