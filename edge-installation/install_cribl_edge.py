@@ -93,12 +93,7 @@ def install_linux():
 
 # ----------------------------
 # Other Environments
-# ----------------------------
-
-
-
-dimport subprocess
-import platform
+# ---------------------------
 
 def install_windows():
     print("Windows installation command:")
@@ -126,11 +121,7 @@ def install_windows():
         print(f"Standard error: {result.stderr}")
     else:
         print("This script must be run in a Windows environment.")
-
-
-
-
-
+        
 def install_docker():
     print("Docker installation command:")
     command = (
