@@ -95,6 +95,17 @@ def install_linux():
 # Other Environments
 # ---------------------------
 
+import platform
+import subprocess
+
+def load_config(file_path):
+    config = {}
+    with open(file_path, 'r') as file:
+        for line in file:
+            key, value = line.strip().split('=')
+            config[key] = value
+    return config
+
 def install_windows():
     print("Windows installation command:")
     
@@ -106,6 +117,11 @@ def install_windows():
     FLEET_NAME = config["FLEET_NAME"]
     TLS_DISABLED = config["TLS_DISABLED"]
     
+    # Ensure TLS_DISABLED is correctly formatted
+    if TLS_DISABLED.lower() == 'true':
+        TLS_DISABLED = 'true'
+    else:
+        TLS_DISABLED = 'false'
     
     # Construct the msiexec command using values from the config file
     command = f'msiexec /i "{FOR_WINDOWS_CRIBL_PKG_URL}" /qn MODE=mode-managed-edge HOSTNAME={LEADER_IP} PORT=4200 AUTH={EDGE_TOKEN} FLEET={FLEET_NAME} TLS_DISABLED={TLS_DISABLED}'
@@ -119,15 +135,17 @@ def install_windows():
         
         if result.returncode == 0:
             # Restart the Cribl service
-            run("net stop cribl")
-            run("net start cribl")
+            subprocess.run("net stop cribl", shell=True)
+            subprocess.run("net start cribl", shell=True)
             print("Installation done successfully.")
         else:
             raise RuntimeError(f"Installation failed with return code {result.returncode}")
     else:
         print("This script must be run in a Windows environment.")
 
-        
+
+
+
 def install_docker():
     print("Docker installation command:")
     command = (
