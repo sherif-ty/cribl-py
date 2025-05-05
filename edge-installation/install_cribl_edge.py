@@ -117,21 +117,15 @@ def install_windows():
     FLEET_NAME = config["FLEET_NAME"]
     TLS_DISABLED = config["TLS_DISABLED"]
     
-    # Ensure TLS_DISABLED is correctly formatted
-    if TLS_DISABLED.lower() == 'true':
-        TLS_DISABLED = 'true'
-    else:
-        TLS_DISABLED = 'false'
-    
     # Construct the msiexec command using values from the config file
     command = f'msiexec /i "{FOR_WINDOWS_CRIBL_PKG_URL}" /qn MODE=mode-managed-edge HOSTNAME={LEADER_IP} PORT=4200 AUTH={EDGE_TOKEN} FLEET={FLEET_NAME} TLS_DISABLED={TLS_DISABLED}'
     
     if platform.system() == "Windows":
         print(f"Running command: {command}")
         result = subprocess.run(command, shell=True, capture_output=True, text=True)
-        print(f"Return code: {result.returncode}")
-        print(f"Standard output: {result.stdout}")
-        print(f"Standard error: {result.stderr}")
+        # print(f"Return code: {result.returncode}")
+        # print(f"Standard output: {result.stdout}")
+        # print(f"Standard error: {result.stderr}")
         
         if result.returncode == 0:
             # Restart the Cribl service
