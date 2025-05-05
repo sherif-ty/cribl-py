@@ -104,9 +104,10 @@ def install_windows():
     LEADER_IP = config["LEADER_IP"]
     EDGE_TOKEN = config["EDGE_TOKEN"]
     FLEET_NAME = config["FLEET_NAME"]
+    TLS_DISABLED = config["TLS_DISABLED"]
     
     # Construct the msiexec command using values from the config file
-    command = f'msiexec /i "{FOR_WINDOWS_CRIBL_PKG_URL}" /qn MODE=mode-managed-edge HOSTNAME={LEADER_IP} PORT=4200 AUTH={EDGE_TOKEN} FLEET={FLEET_NAME}'
+    command = f'msiexec /i "{FOR_WINDOWS_CRIBL_PKG_URL}" /qn MODE=mode-managed-edge HOSTNAME={LEADER_IP} PORT=4200 AUTH={EDGE_TOKEN} FLEET={FLEET_NAME} TLS_DISABLED={TLS_DISABLED}'
     
     if platform.system() == "Windows":
         print(f"Running command: {command}")
