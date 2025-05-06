@@ -1,3 +1,4 @@
+
 # Cribl-Py: Manage Cribl with Python
 
 `cribl-py` is a Python-based automation tool designed to help you manage various aspects of your Cribl environment — from installing Cribl Edge nodes to managing fleets and configurations via API.
@@ -6,13 +7,11 @@ This repository is modular, starting with an **Edge installer**, and will contin
 
 ---
 
-## Version 1.2.0
+## Version 2.0.0
 
 ### Release Notes
 - Fixed the Windows installation script
-- Added a small note for users to check the environment OS in the config file and, in case they are using Windows, to add the `For_Windows_cribl_pkg_url` link.
-  Example: `For_Windows_cribl_pkg_url=https://cdn.cribl.io/dl/4.9.3/cribl-4.9.3-25d56bdd-win32-x64.msi`
-
+- Added a small note for users to check the environment OS in the config file and, in case they are using Windows. `
 ### Upcoming Changes
 - Make the script set the environment proxy inside the system registry for Windows, systemd for Linux
 - Dynamically create Fleets/Sub-Fleets if not found
@@ -20,7 +19,6 @@ This repository is modular, starting with an **Edge installer**, and will contin
 - Upload and sync packs or pipelines
 - Secure API integration with login token management
 - Create separate module for each environment
-
 
 ## 1. Cribl Edge Installer
 
@@ -51,12 +49,17 @@ This Python-based installer:
 ## Project Structure
 
 ```
-cribl-py/
-├── install_cribl_edge.py     # Edge installer logic
-├── config.txt                # Configuration file (used to customize install)
-├── README.md                 # You're reading it
-├── requirements.txt          # Python dependencies (currently empty or 'requests' if needed)
-└── run.sh                    # Optional shell wrapper to execute the script
+CRIBL-PY/
+├── edge-installation/
+── config.txt                # Configuration file (used to customize install)
+├── docker_installation.py        # Docker installation logic
+├── kubernetes_installation.py    # Kubernetes installation logic
+├── linux_installation.py         # Linux installation logic
+├── windows_installation.py       # Windows installation logic
+├── main.py                       # Main script
+├── requirements.txt              # Python dependencies (currently empty or 'requests' if needed)
+├── run.sh                        # Optional shell wrapper to execute the script
+└── README.md                     # You're reading it
 ```
 
 ---
@@ -84,7 +87,7 @@ CRIBL_VERSION = <desired Cribl version>
 ### Option 1: Direct Python Execution
 
 ```bash
-python3 install_cribl_edge.py
+python3 main.py
 ```
 
 ### Option 2: Shell Wrapper
@@ -116,4 +119,3 @@ This will:
 - Use a fresh Edge token for each install (tokens are often single-use)
 - This project is meant for testing, automation, and bootstrapping
 ---
-

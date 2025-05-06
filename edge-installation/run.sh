@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Install dependencies from requirements.txt
-pip install -r requirements.txt
+# Ensure the script is executable
+chmod +x run.sh
 
-# Run the Python installer script
- python3 install_cribl_edge.py
+# Run the main Python script
+python main.py
