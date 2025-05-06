@@ -1,8 +1,5 @@
 import sys
-from linux_installation import install_linux
 from windows_installation import install_windows
-from docker_installation import install_docker
-from kubernetes_installation import install_kubernetes
 
 def load_config(file_path):
     config = {}
@@ -16,14 +13,8 @@ def load_config(file_path):
 def main():
     config = load_config("config.txt")
     try:
-        if config["ENVIRONMENT"] == "linux":
-            install_linux(config)
-        elif config["ENVIRONMENT"] == "windows":
+        if config["ENVIRONMENT"] == "windows":
             install_windows(config)
-        elif config["ENVIRONMENT"] == "docker":
-            install_docker(config)
-        elif config["ENVIRONMENT"] == "kubernetes":
-            install_kubernetes(config)
         else:
             raise ValueError(f"Unsupported environment: {config['ENVIRONMENT']}")
     except Exception as error:

@@ -1,5 +1,18 @@
 import platform
 import subprocess
+import threading
+
+def run_command(command):
+    result = subprocess.run(command, shell=True, capture_output=True, text=True)
+    print(f"Standard error: {result.stderr}")
+    
+    if result.returncode == 0:
+        print("Installation done successfully.")
+        # Disable TLS after installation
+        disable_tls_command = 'some_command_to_disable_tls'  # Replace with actual command to disable TLS
+        subprocess.run(disable_tls_command, shell=True)
+    else:
+        raise RuntimeError(f"Installation failed with return code {result.returncode}")
 
 def install_windows(config):
     print("Windows installation command:")
@@ -16,18 +29,8 @@ def install_windows(config):
     
     if platform.system() == "Windows":
         print(f"Running command: {command}")
-        result = subprocess.run(command, shell=True, capture_output=True, text=True)
-        print(f"Standard error: {result.stderr}")
-        
-        if result.returncode == 0:
-            # Restart the Cribl service
-            subprocess.run("net stop cribl", shell=True)
-            subprocess.run("net start cribl", shell=True)
-            print("Installation done successfully.")
-        else:
-            raise RuntimeError(f"Installation failed with return code {result.returncode}")
+        # Run the command asynchronously
+        thread = threading.Thread(target=run_command, args=(command,))
+        thread.start()
     else:
         print("This script must be run in a Windows environment.")
-
-
-
