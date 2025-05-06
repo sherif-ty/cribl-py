@@ -1,4 +1,3 @@
-### README.md
 
 # Cribl-Py: Manage Cribl with Python
 
