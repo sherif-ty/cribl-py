@@ -8,4 +8,5 @@ EDGE_TOKEN = <TOKEN>
 FLEET_NAME = default_fleet
 CRIBL_VERSION = 4.11.0
 For_Windows_cribl_pkg_url = https://cdn.cribl.io/dl/4.9.3/cribl-4.9.3-25d56bdd-win32-x64.msi
-TLS_DISABLED = true
+TLS = false
+LOG_PATH = C:\Windows\Temp\cribl-msiexec-0000000000000.log
